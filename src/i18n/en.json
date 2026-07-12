@@ -1,0 +1,41 @@
+{
+  "app.name": "Readay",
+  "app.tagline": "Your daily reading coach",
+
+  "common.loading": "Loading…",
+  "common.error": "Something went wrong",
+  "common.retry": "Try again",
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.done": "Done",
+  "common.start": "Start",
+  "common.delete": "Delete",
+
+  "auth.signIn": "Sign in",
+  "auth.signInDescription": "Enter your email to receive a magic link",
+
+  "onboarding.title": "Welcome to Readay",
+  "onboarding.subtitle": "Let's get to know you as a reader",
+
+  "home.todayReading": "Today's Reading",
+  "home.continueReading": "Continue Reading",
+  "home.nextSession": "Next Session",
+  "home.weeklyProgress": "Weekly Progress",
+
+  "profile.title": "Profile",
+  "profile.genres": "Genre Preferences",
+
+  "queue.title": "Next Read",
+  "queue.empty": "Your reading queue is empty",
+
+  "schedule.title": "Schedule",
+  "schedule.empty": "No reading sessions scheduled",
+
+  "sessionTracker.start": "Start Reading",
+  "sessionTracker.done": "Done Reading",
+  "sessionTracker.minutes": "minutes",
+  "sessionTracker.pages": "pages",
+
+  "weeklyCoach.title": "Weekly Coach",
+  "weeklyCoach.insufficientData": "Not enough data this week. Keep reading!"
+}
