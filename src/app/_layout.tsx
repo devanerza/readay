@@ -1,18 +1,43 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
-
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import "../global.css";
+import { useEffect } from "react";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  useFonts,
+  EBGaramond_400Regular,
+  EBGaramond_500Medium,
+  EBGaramond_600SemiBold,
+  EBGaramond_700Bold,
+} from "@expo-google-fonts/eb-garamond";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+} from "@expo-google-fonts/inter";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    EBGaramond_400Regular,
+    EBGaramond_500Medium,
+    EBGaramond_600SemiBold,
+    EBGaramond_700Bold,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="book-detail" options={{ presentation: "card" }} />
+      <Stack.Screen name="reading-session" options={{ presentation: "fullScreenModal" }} />
+    </Stack>
   );
 }
