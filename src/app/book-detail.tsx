@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "../components/Icon";
 
 const COVER =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuB2OV4tlgK_ntQnfpegGgLfptxlMAFAeRnJ7gw3ApIvpWxKgmlINdlyxz0qPFah7Lqkx89YboIQSdO3PcywB72UQeXxgMazyObrruOn0LvqChy5J5UF6mbIdrPCr2mH3By_Q9IE_TGJqsWYJxI-KNPNiplvbtAjukHLsWqgnEEa3n-T2yK53GDMm7zah1anXJFAexTMdfX3YVre9VUoBouF2Unm-ZGLza_GMLgflvjl8WDaddGfrKMHeA";
+  "https://books.google.co.id/books/publisher/content?id=LiI6EAAAQBAJ&pg=PP1&img=1&zoom=3&hl=en&sig=ACfU3U3T67vhupw4CIk4MrF_WNVtY6vZqg&w=1280";
 
 export default function BookDetail() {
   const router = useRouter();
