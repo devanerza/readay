@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable, ImageBackground } from "react-native";
+import { View, Text, TextInput, ScrollView, Image, Pressable, ImageBackground } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
@@ -272,9 +272,7 @@ function FeatureCard({
   );
 }
 
-// Thin wrapper to keep the TextInput import local and typed
 function TextInputWrapper(props: any) {
-  const { TextInput } = require("react-native");
   return (
     <TextInput
       {...props}

@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Pressable } from "react-native";
-import { Tabs, useRouter, usePathname } from "expo-router";
+import { View, Text, Pressable } from "react-native";
+import { Tabs } from "expo-router";
 import Icon from "../../components/Icon";
 
 const TABS: { name: string; label: string; icon: any }[] = [
@@ -50,7 +50,6 @@ function CustomTabBar({ state, navigation }: any) {
 }
 
 function TabLabel({ label, focused }: { label: string; focused: boolean }) {
-  const { Text } = require("react-native");
   return (
     <Text className={`font-label-md text-[11px] ${focused ? "text-primary" : "text-on-surface-variant"}`}>
       {label}
@@ -61,7 +60,7 @@ function TabLabel({ label, focused }: { label: string; focused: boolean }) {
 export default function TabsLayout() {
   return (
     <Tabs
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ headerShown: false, lazy: true }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home" />
