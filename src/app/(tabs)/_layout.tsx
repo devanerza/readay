@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import Icon from "../../components/Icon";
+import { useAuthStore } from "../../stores/auth-store";
 
 const TABS: { name: string; label: string; icon: any }[] = [
   { name: "home", label: "Home", icon: "auto_stories" },
@@ -58,6 +59,18 @@ function TabLabel({ label, focused }: { label: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  const router = useRouter();
+  const session = useAuthStore((s) => s.session);
+  const isLoading = useAuthStore((s) => s.isLoading);
+
+  useEffect(() => {
+    if (!isLoading && !session) {
+      router.replace("/auth" as never);
+    }
+  }, [session, isLoading]);
+
+  if (!session) return null;
+
   return (
     <Tabs
       screenOptions={{ headerShown: false, lazy: true }}

@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Image } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text, Pressable, Image, Alert } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { createReadingSession } from "../lib/reading-sessions";
+import { useAuthStore } from "../stores/auth-store";
 import Icon from "../components/Icon";
+import TopAppBar from "../components/TopAppBar";
+import ProgressBar from "../components/ProgressBar";
 
 const AVATAR =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuDRtkBbBNjD_sPAgL4uqDSQ4VxoNKF1p0y7Jp_UoVXQY39g17SC1fcD9Nw_GY37Uc5jz2RcK8IeTPVXP9lOcUFmBNneOMf9GR721-5focyJ98W0Xr-bbRGObJ_SIWROh1-QKxmsoYhWy-YuKm-B5LLGbtP7gSZRrWpbMvtJrfQW1kTCkHuRXtGRG3B1lN8Tv6KLrq5dh2U2CpXfogGMnMS-IR_Fx0R7iAzr-okTqYtt42bUy4iDkLQV6A";
@@ -10,12 +14,16 @@ const AVATAR =
 const BOOK_COVER =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCkxuLGaqK3w_yaJP2f-0OzssqoeCmJrigwFw8SN_AxlMDcjHwmD9O1ROCH2KQLYf4ncTOd7siV89fWiB1lXwuuteK4hyfIb-rT1u9X-s1892B9hB73mK5qy7rzp73-YZC4bQw0_4HQO5DZ99SxWwCi3kAQJrz6GwVM9qu8Toz6wETJTYUOvyj_3jvKx3g1tpvl36zIT9H16uApkUlYBdoaPIMrPD7ExNV1lR9XvFDOnl9oy2tk_qjQow";
 
-const TOTAL_SECONDS = 900; // 15 minutes
+const TOTAL_SECONDS = 900;
+const ESTIMATED_PAGES_PER_MIN = 2;
 
 export default function ReadingSession() {
   const router = useRouter();
+  const { book_id } = useLocalSearchParams<{ book_id?: string }>();
+  const session = useAuthStore((s) => s.session);
   const [seconds, setSeconds] = useState(TOTAL_SECONDS);
   const [isPaused, setIsPaused] = useState(false);
+  const [saving, setSaving] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -30,6 +38,31 @@ export default function ReadingSession() {
     };
   }, [isPaused]);
 
+  const elapsedSeconds = TOTAL_SECONDS - seconds;
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+  const estimatedPages = Math.round(elapsedMinutes * ESTIMATED_PAGES_PER_MIN);
+
+  const handleEndSession = async () => {
+    if (!session?.user.id) return;
+    if (elapsedSeconds < 10) { router.back(); return; }
+
+    setSaving(true);
+    try {
+      await createReadingSession({
+        user_id: session.user.id,
+        book_id: book_id ?? 'unknown',
+        duration_seconds: elapsedSeconds,
+        pages_read: estimatedPages,
+        date: new Date().toISOString(),
+      });
+      router.back();
+    } catch {
+      Alert.alert("Error", "Could not save session.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const timeLabel = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
@@ -38,16 +71,15 @@ export default function ReadingSession() {
   return (
     <View className="flex-1 bg-surface" style={isPaused ? { opacity: 0.8 } : undefined}>
       <SafeAreaView edges={["top"]} className="flex-1">
-        {/* Top Nav */}
-        <View className="w-full flex-row justify-between items-center px-margin-page py-4">
-          <Text className="font-display text-headline-md text-primary">ReadFlow</Text>
-          <View className="flex-row items-center gap-4">
-            <Icon name="settings" color="#52634c" />
+        <TopAppBar
+          onBack={() => router.back()}
+          rightActions={[{ icon: "settings", color: "#52634c" }]}
+          rightSlot={
             <View className="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
               <Image source={{ uri: AVATAR }} className="w-full h-full" resizeMode="cover" />
             </View>
-          </View>
-        </View>
+          }
+        />
 
         {/* Focus Canvas */}
         <View className="flex-1 items-center justify-center px-margin-page">
@@ -63,10 +95,12 @@ export default function ReadingSession() {
               <Text className="font-display text-headline-lg-mobile text-primary tracking-widest">{timeLabel}</Text>
             </View>
             <Text className="font-label-md text-on-surface-variant uppercase tracking-tighter">remaining</Text>
-            <View className="w-48 h-1 bg-surface-container-high rounded-full overflow-hidden mt-2">
-              <View className="h-full bg-primary rounded-full" style={{ width: `${progressPct}%` }} />
+            <View className="w-48 mt-2">
+              <ProgressBar progress={progressPct} />
             </View>
-            <Text className="font-label-md text-on-surface-variant mt-2">24 pages read tonight</Text>
+            <Text className="font-label-md text-on-surface-variant mt-2">
+              {estimatedPages > 0 ? `${estimatedPages} pages read tonight` : "Starting your session..."}
+            </Text>
           </View>
 
           {/* Quote */}
@@ -89,11 +123,12 @@ export default function ReadingSession() {
               <Icon name={isPaused ? "play_arrow" : "pause"} color="#52634c" filled={isPaused} />
             </Pressable>
             <Pressable
-              onPress={() => router.back()}
-              className="px-8 py-3 rounded-full bg-primary flex-row items-center gap-2 active:scale-95"
+              onPress={handleEndSession}
+              disabled={saving}
+              className="px-8 py-3 rounded-full bg-primary flex-row items-center gap-2 active:scale-95 disabled:opacity-50"
             >
               <Icon name="stop_circle" size={16} color="#ffffff" />
-              <Text className="text-on-primary font-label-md">End Session</Text>
+              <Text className="text-on-primary font-label-md">{saving ? "Saving…" : "End Session"}</Text>
             </Pressable>
             <Pressable className="w-14 h-14 items-center justify-center rounded-full bg-surface-container border border-outline-variant active:scale-90">
               <Icon name="auto_awesome" color="#52634c" />

@@ -1,31 +1,85 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text, ScrollView, Image, Pressable, Alert } from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
+import { useAuthStore } from "../stores/auth-store";
+import { getBookDetails, buildCoverUrl } from "../lib/open-library";
+import { cacheBookFromDetail } from "../lib/book-service";
+import { addToQueue } from "../lib/queue-items";
+import { getReadingStats } from "../lib/reading-sessions";
+import TopAppBar from "../components/TopAppBar";
+import ProgressBar from "../components/ProgressBar";
+import LoadingOverlay from "../components/LoadingOverlay";
 import Icon from "../components/Icon";
-
-const COVER =
-  "https://books.google.co.id/books/publisher/content?id=LiI6EAAAQBAJ&pg=PP1&img=1&zoom=3&hl=en&sig=ACfU3U3T67vhupw4CIk4MrF_WNVtY6vZqg&w=1280";
 
 export default function BookDetail() {
   const router = useRouter();
+  const { open_library_id } = useLocalSearchParams<{ open_library_id?: string }>();
+  const session = useAuthStore((s) => s.session);
+  const userId = session?.user.id;
+
+  const { data: detail, isLoading } = useQuery({
+    queryKey: ["ol-detail", open_library_id],
+    queryFn: () => getBookDetails(open_library_id!),
+    enabled: !!open_library_id,
+  });
+
+  const { data: stats } = useQuery({
+    queryKey: ["reading-stats", userId],
+    queryFn: () => getReadingStats(userId!),
+    enabled: !!userId,
+  });
+
+  const [adding, setAdding] = React.useState(false);
+
+  const displayCover = detail?.covers?.[0] ? buildCoverUrl(detail.covers[0]) : null;
+  const displayDescription = typeof detail?.description === "string" ? detail.description : detail?.description?.value ?? null;
+  const genreTags = detail?.subjects?.slice(0, 3) ?? [];
+  const estimateTime = null; // OL doesn't provide read time
+
+  const handleStartReading = async () => {
+    if (!userId || !open_library_id) return;
+    setAdding(true);
+    try {
+      const bookId = await cacheBookFromDetail(open_library_id);
+      await addToQueue({ user_id: userId, book_id: bookId });
+      router.push(`/reading-session?book_id=${bookId}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : typeof e === 'object' && e ? (e as any).message ?? JSON.stringify(e) : String(e);
+      Alert.alert("Error", `Could not add: ${msg}`);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleAddToQueue = async () => {
+    if (!userId || !open_library_id) return;
+    setAdding(true);
+    try {
+      const bookId = await cacheBookFromDetail(open_library_id);
+      await addToQueue({ user_id: userId, book_id: bookId });
+      Alert.alert("Added", `${detail?.title ?? "Book"} added to your queue.`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : typeof e === 'object' && e ? (e as any).message ?? JSON.stringify(e) : String(e);
+      Alert.alert("Error", `Could not add: ${msg}`);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  if (isLoading) return <LoadingOverlay />;
 
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        {/* App Bar */}
-        <View className="w-full flex-row justify-between items-center px-margin-page py-4">
-          <View className="flex-row items-center gap-4">
-            <Pressable onPress={() => router.back()} className="p-2 -ml-2 active:bg-surface-container rounded-full">
-              <Icon name="arrow_back" color="#52634c" />
-            </Pressable>
-            <Text className="font-display text-headline-md text-primary ml-2">ReadFlow</Text>
-          </View>
-          <View className="flex-row items-center gap-4">
-            <Icon name="share" color="#444841" />
-            <Icon name="bookmark" color="#444841" />
-          </View>
-        </View>
+        <TopAppBar
+          onBack={() => router.back()}
+          rightActions={[
+            { icon: "share", color: "#444841" },
+            { icon: "bookmark", color: "#444841" },
+          ]}
+        />
 
         <ScrollView
           className="flex-1"
@@ -34,17 +88,27 @@ export default function BookDetail() {
         >
           {/* Hero */}
           <View className="px-margin-page pt-4 items-center">
-            <View className="w-full max-w-[280px] aspect-[2/3] rounded-lg overflow-hidden">
-              <Image source={{ uri: COVER }} className="w-full h-full" resizeMode="cover" />
+            <View className="w-full max-w-[280px] aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
+              {displayCover ? (
+                <Image source={{ uri: displayCover }} className="w-full h-full" resizeMode="cover" />
+              ) : (
+                <View className="flex-1 items-center justify-center">
+                  <Text className="text-outline font-display text-headline-xl">{detail?.title?.[0] ?? "?"}</Text>
+                </View>
+              )}
             </View>
 
             <View className="items-center pt-4 w-full">
-              <View className="flex-row flex-wrap justify-center gap-2 mb-3">
-                <Tag label="Contemporary Fiction" bg="bg-tertiary-container/10" color="text-on-tertiary-container" />
-                <Tag label="Magical Realism" bg="bg-primary-container/10" color="text-on-primary-container" />
-              </View>
-              <Text className="font-headline-lg-mobile text-on-surface text-center mb-1">The Midnight Library</Text>
-              <Text className="font-body-lg text-on-surface-variant italic mb-6">Matt Haig</Text>
+              {genreTags.length > 0 && (
+                <View className="flex-row flex-wrap justify-center gap-2 mb-3">
+                  {genreTags.map((tag) => (
+                    <View key={tag} className="bg-tertiary-container/10 px-3 py-1 rounded-full">
+                      <Text className="font-label-md text-on-tertiary-container">{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Text className="font-headline-lg-mobile text-on-surface text-center mb-1">{detail?.title ?? "Unknown Book"}</Text>
 
               {/* Stats */}
               <View className="flex-row gap-4 w-full mb-6">
@@ -52,88 +116,69 @@ export default function BookDetail() {
                   <Text className="text-caption text-outline uppercase tracking-wider mb-1">Time to Read</Text>
                   <View className="flex-row items-center gap-2">
                     <Icon name="schedule" size={18} color="#52634c" />
-                    <Text className="font-title-lg text-body-md text-primary">4h 30m</Text>
+                    <Text className="font-title-lg text-body-md text-primary">—</Text>
                   </View>
                 </View>
                 <View className="flex-1 bg-surface-container-low p-4 rounded-xl">
-                  <Text className="text-caption text-outline uppercase tracking-wider mb-1">Mood</Text>
+                  <Text className="text-caption text-outline uppercase tracking-wider mb-1">Released</Text>
                   <View className="flex-row items-center gap-2">
-                    <Icon name="auto_awesome" size={18} color="#52634c" filled />
-                    <Text className="font-title-lg text-body-md text-primary">Reflective</Text>
+                    <Icon name="calendar_month" size={18} color="#52634c" />
+                    <Text className="font-title-lg text-body-md text-primary">{detail?.first_publish_date ?? "—"}</Text>
                   </View>
                 </View>
               </View>
 
               {/* CTA */}
               <Pressable
-                onPress={() => router.push("/reading-session")}
-                className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95"
+                onPress={handleStartReading}
+                disabled={adding}
+                className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95 disabled:opacity-50"
               >
                 <Icon name="play_arrow" size={20} color="#ffffff" filled />
-                <Text className="text-white font-label-md">Start Reading</Text>
+                <Text className="text-white font-label-md">{adding ? "Adding..." : "Start Reading"}</Text>
               </Pressable>
-              <Text className="mt-4 text-caption text-outline text-center">
-                Available in E-book and Audiobook formats
+              <Pressable
+                onPress={handleAddToQueue}
+                disabled={adding}
+                className="w-full py-3 mt-3 items-center active:opacity-70"
+              >
+                <Text className="font-label-md text-primary">Add to Queue</Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Description */}
+          {displayDescription && (
+            <View className="px-margin-page mt-8">
+              <View className="flex-row items-center gap-3 mb-4">
+                <View className="w-10 h-10 rounded-full bg-secondary-container items-center justify-center">
+                  <Icon name="favorite" size={18} color="#7a532a" />
+                </View>
+                <Text className="font-headline-md text-on-surface">About this book</Text>
+              </View>
+              <Text className="font-body-lg text-on-surface-variant leading-relaxed">
+                {displayDescription}
               </Text>
             </View>
-          </View>
+          )}
 
-          {/* Progress */}
-          <View className="px-margin-page mt-8">
-            <View className="bg-surface-container-high/40 p-6 rounded-2xl border border-surface-variant">
-              <View className="flex-row justify-between items-center mb-2">
-                <Text className="font-title-lg text-on-surface">Your Progress</Text>
-                <Text className="text-label-md font-label-md text-primary">46% complete</Text>
+          {/* Reading Progress */}
+          {stats && stats.sessionsCount > 0 && (
+            <View className="px-margin-page mt-8">
+              <View className="bg-surface-container-high/40 p-6 rounded-2xl border border-surface-variant">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="font-title-lg text-on-surface">Your Reading</Text>
+                  <Text className="font-label-md text-primary">{stats.totalMinutes} min</Text>
+                </View>
+                <ProgressBar progress={Math.min((stats.totalPages / 300) * 100, 100)} />
+                <Text className="mt-3 text-caption text-on-surface-variant italic">
+                  {stats.sessionsCount} session{stats.sessionsCount !== 1 ? "s" : ""} logged
+                </Text>
               </View>
-              <View className="h-1.5 w-full bg-surface-variant rounded-full overflow-hidden">
-                <View className="h-full bg-primary rounded-full" style={{ width: "46%" }} />
-              </View>
-              <Text className="mt-3 text-caption text-on-surface-variant italic">
-                "Between life and death there is a library..." — You are on Page 142 of 304
-              </Text>
             </View>
-          </View>
-
-          {/* Why we recommend */}
-          <View className="px-margin-page mt-8">
-            <View className="flex-row items-center gap-3 mb-4">
-              <View className="w-10 h-10 rounded-full bg-secondary-container items-center justify-center">
-                <Icon name="favorite" size={18} color="#7a532a" />
-              </View>
-              <Text className="font-headline-md text-on-surface">Why we recommend this</Text>
-            </View>
-            <Text className="font-body-lg text-on-surface-variant leading-relaxed">
-              Matt Haig captures the universal human experience of "what if" with such gentleness. In a world that
-              often demands perfection, this book serves as a quiet reminder that the lives we didn't lead aren't
-              necessarily better than the one we are in.
-            </Text>
-          </View>
-
-          {/* Details */}
-          <View className="px-margin-page mt-8 gap-6">
-            <DetailRow label="Publisher" value="Viking Penguin" />
-            <DetailRow label="Released" value="August 13, 2020" />
-            <DetailRow label="ISBN" value="978-0525559474" />
-          </View>
+          )}
         </ScrollView>
       </SafeAreaView>
-    </View>
-  );
-}
-
-function Tag({ label, bg, color }: { label: string; bg: string; color: string }) {
-  return (
-    <View className={`${bg} px-3 py-1 rounded-full`}>
-      <Text className={`font-label-md ${color}`}>{label}</Text>
-    </View>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="gap-1">
-      <Text className="text-caption text-outline uppercase tracking-widest">{label}</Text>
-      <Text className="text-body-md text-on-surface">{value}</Text>
     </View>
   );
 }
