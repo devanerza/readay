@@ -17,6 +17,7 @@
 4. **Scope discipline:** if a task resembles anything in PRD §4 (social, ratings, streak animations, notes/highlights, audiobooks, chatbot), stop and flag it rather than building it.
 5. **Language:** all copy/strings in English for MVP, but never hardcode raw strings inline — route through a simple i18n/strings layer from day one so the Bahasa Indonesia fast-follow (PRD §10.2) is a translation pass, not a refactor. If the provided UI hardcodes strings, that's something to flag/refactor into the strings layer as part of wiring it up.
 6. **Offline logging is out of scope for MVP** (PRD §10.3) — but don't paint the session-logging flow into a corner; keep the write path simple enough that a local queue can be added later without a schema change.
+7. **Open Library API for real book data.** Use Open Library's free API (`/search.json`, `/works/{id}.json`, `covers.openlibrary.org`) for Discover search, book details, and cover images. Cache results in Supabase `books` table via upsert by `open_library_id`. No API key required.
 
 ---
 
@@ -35,26 +36,109 @@
 - [ ] Treat the provided UI as source of truth for design — no comparison against PRD §7
 
 ### Phase 3 — Auth & Onboarding (wiring)
-- [ ] Supabase Auth integration (magic link / OTP — no password screens) behind the provided auth UI
-- [ ] Wire onboarding form (already built) to React Hook Form state + submit handler
-- [ ] Write onboarding answers to `profiles` table shape (per PRD §8.3 reference schema) — agent writes the *client code* that calls Supabase, not the schema itself
+
+**Auth method: email+password signup + sign-in (email confirmation disabled in Supabase).** No OTP step — `signUp` creates and confirms the user immediately. The user must not be treated as onboarded until a `profiles` row exists.
+
+- [x] **Signup — email + password.** Call `supabase.auth.signUp({ email, password })` behind the provided signup UI. Since email confirmation is disabled in Supabase settings, the user is auto-confirmed and a session is returned immediately.
+- [x] **Sign-in (returning users).** Call `supabase.auth.signInWithPassword({ email, password })` behind the provided sign-in UI.
+- [x] Wire onboarding form (already built) to React Hook Form state + submit handler
+- [x] Write onboarding answers to `profiles` table shape (per PRD §8.3 reference schema) — agent writes the *client code* that calls Supabase, not the schema itself
 
 ### Phase 4 — Core Loop, Screen by Screen (wiring + data QA)
 For each screen below: connect to Supabase via TanStack Query, verify loading/empty/error states render correctly, verify the right fields show the right data, and check nothing breaks on edge cases (empty queue, zero sessions logged, etc.). Do not alter layout/visual design — that's owned by the provided UI.
-1. **Profile** (§3.1 reference) — read/write `profiles`; genre weights rendered wherever the provided UI places them
-2. **Queue / Library → "Next Read"** (§3.2) — bind `queue_items` list; verify cover + reason text render per item, ranking order is respected
-3. **Schedule** (§3.3) — bind `schedule_blocks`; verify day/time data round-trips correctly
-4. **Session Tracker** (§3.4) — wire Start → Done flow to write a `reading_sessions` row; verify minutes/pages persist correctly
-5. **Weekly Coach** (§3.5) — implement the rule-based template function that reads `reading_sessions` and produces the narrative text/recommendation string; verify it renders into the provided insight component correctly, including when there's insufficient data for the week
+
+**Trigger/function points across Phase 4 (agent writes client code; Devan provisions DB-side):**
+- Genre weights auto-shift when a session is completed or abandoned (§3.1). Agent writes the client-side API call that notifies the update. Devan provisions the DB trigger or Edge Function that recalculates `profiles.genre_weights` from `reading_sessions`.
+- Profile stat tiles (reading time, pages turned, goal progress) and Journey streak/consistency data are **computed from `reading_sessions` and `queue_items` on read** — no new table. Agent writes the query; Devan may choose to materialize via a DB function or view.
+
+1. **Profile** (§3.1 reference) — read/write `profiles`; genre weights rendered wherever the provided UI places them. Profile stat tiles (reading time, pages, goal) computed from `reading_sessions`. ✅ *Done*
+2. **Queue / Library → "Next Read"** (§3.2) — `queue_items` lib created with full CRUD. Library screen is still a placeholder (needs UI from web chat). Home screen's "Next Read" section wired to top queued item.
+3. **Schedule** (§3.3) — `schedule_blocks` lib created. Home screen shows upcoming block. **No dedicated Schedule screen exists yet** (needs UI from web chat — the PRD explicitly requires a Schedule tab or reachable screen).
+4. **Session Tracker** (§3.4) — wire Start → Done flow to write a `reading_sessions` row; verify minutes/pages persist correctly. ✅ *Done*
+5. **Weekly Coach** (§3.5) — rule-based template function implemented in `lib/weekly-coach.ts`, renders into Journey screen. Not yet persisted to `weekly_insights` table (computes on-the-fly).
 
 ### Phase 5 — Home (wiring)
-- [ ] Bind Home sections (Today's Reading, Continue Reading, Next Session, Weekly Progress line) to the relevant queries built in Phase 4
-- [ ] QA that no section silently fails or shows stale data
+- [x] Bind Home sections (greeting/streak, Currently Reading, Next Read, Upcoming Session, Recently Finished) to Phase 4 queries
+- [x] QA that no section silently fails or shows stale data
 
 ### Phase 6 — QA Pass
-- [ ] Cross-check every screen against Definition of Done (§2 below)
+- [x] Cross-check every screen against Definition of Done (§2 below)
 - [ ] Verify notifications (Expo Notifications) fire correctly for schedule reminders, and that copy matches what was provided (agent doesn't rewrite copy — flag if missing)
 - [ ] Regression check after any Supabase schema proposal is applied by Devan
+
+### Phase 7 — Remaining MVP Gaps
+
+**Goal:** Close the gap between the current state and a fully-functioning MVP per PRD §1.3, §3, §5, §6.
+
+#### 7.1 — Schedule Screen (PRD §3.3, §6)
+- **Why:** The PRD's IA (§6) lists Schedule as its own nav destination (`Schedule → Weekly Calendar / Upcoming Sessions`). Currently only a summary reads from `schedule_blocks` on the Home screen — users have no way to create/edit/delete their schedule blocks.
+- **Depends on:** UI from web chat (Schedule screen design). Onboarding should also capture free-time blocks.
+- **What to wire:** CRUD for `schedule_blocks` table. TanStack Query mutations. React Hook Form for block creation (day_of_week, start_time, duration_minutes).
+
+#### 7.2 — Library Screen — Queue Management (PRD §3.2)
+- **Why:** The Library tab is a placeholder. Users need to see their full queue (grouped by status), change book status, and manage their list.
+- **Depends on:** UI from web chat (Library grid/list design).
+- **What to wire:** Query `queue_items` joined with `books`. Tabs/sections for queued / reading / finished. Status toggle mutation. Book cover rendering.
+
+#### 7.3 — Discover + Book Detail via Open Library API (PRD §3.2)
+- **Why:** Both screens are 100% hardcoded mock data. Users can't discover real books or see real book metadata.
+- **No UI dependency** — screens already exist with mock data; just swap in real data while preserving layout.
+- **What to wire:**
+  1. Migrate `books` table to match Open Library schema (see reference below)
+  2. `lib/open-library.ts` — raw API client:
+     - `searchBooks(query)` → `https://openlibrary.org/search.json?q={query}`
+     - `getBookDetails(olId)` → `https://openlibrary.org/works/{olId}.json`
+     - `getBooksBySubject(subject)` → `https://openlibrary.org/subjects/{subject}.json?limit=20`
+     - Cover URL builder: `https://covers.openlibrary.org/b/id/{cover_id}-L.jpg`
+  3. `lib/book-service.ts` — orchestrator: search OL → upsert to Supabase `books` → return local book objects
+  4. **Discover screen:** wire search (debounced 300ms), genre-filtered browsing, "Based on Your Favorites" from `profile.genre_weights`, "Perfect for Tonight" from curated subject
+  5. **Book Detail screen:** read book from Supabase `books` table by `book_id` route param; compute progress from `reading_sessions` for this `book_id`
+  6. **Actions:** "Add to Queue" → `addToQueue()`, "Start Reading" → navigate to `reading-session?book_id={id}`
+- **Migration proposal (for Devan to run):**
+  ```sql
+  CREATE TABLE IF NOT EXISTS public.books (
+    id uuid primary key default gen_random_uuid(),
+    open_library_id text unique,
+    title text not null,
+    author text,
+    cover_url text,
+    genres text[],
+    rating numeric,
+    rating_count int,
+    estimated_read_minutes int,
+    mood_tags text[],
+    available_formats text[],
+    description text,
+    isbn text,
+    publisher text,
+    published_date text,
+    page_count int
+  );
+  ```
+
+#### 7.4 — Genre Weight Auto-Shift (PRD §3.1)
+- **Why:** Genre weights are static after onboarding. The PRD says they should shift dynamically when a session is completed or abandoned.
+- **What to wire:**
+  - Client-side: after `createReadingSession()`, call a Supabase Edge Function endpoint (or direct DB call) that recalculates weights
+  - Devan provisions: DB trigger or Edge Function that reads recent `reading_sessions` and updates `profiles.genre_weights`
+
+#### 7.5 — Queue Re-Ranking (PRD §3.2)
+- **Why:** Queue rank is static. It should re-rank when genre weights change.
+- **What to wire:**
+  - After genre weight recalculation (7.4), re-fetch and re-sort `queue_items` by a weighted score derived from genre match
+  - Can be client-side (re-sort in TanStack Query on cache invalidation) or via Edge Function
+
+#### 7.6 — Weekly Coach Persistence (PRD §8.3)
+- **Why:** Weekly Coach currently computes on-the-fly each Journey load. Should cache to `weekly_insights` for consistency.
+- **What to wire:**
+  - Write `generateWeeklyInsight()` output to `weekly_insights` table (upsert by week_start)
+  - Read from `weekly_insights` first; fall back to on-the-fly generation if no cached row
+  - Invalidate when new sessions are logged
+
+#### 7.7 — Foundational Layer Cleanup
+- **i18n/strings layer (AGENTS #5):** Create `lib/strings/en.json` with all UI copy. Refactor every screen to pull strings from the layer. Enables Bahasa Indonesia fast-follow (PRD §10.2).
+- **Error handling:** Add Toast/Alert to all async Supabase operations. Show retry buttons on query failures.
+- **Hardcoded items on Profile:** Preferences section and avatar URL need a schema/storage solution (post-MVP). For MVP, link avatar to Gravatar by email or supabase auth avatar.
 
 ---
 
