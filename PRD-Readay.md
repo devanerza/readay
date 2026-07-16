@@ -175,7 +175,7 @@ Readay should read as a **premium lifestyle product for passionate readers** —
 | Styling | **NativeWind** (Tailwind for RN) | You already use Tailwind on web projects — same mental model, fast to theme "calm/minimal" design |
 | Forms | **React Hook Form** | Lightweight, good for onboarding questionnaire |
 | Navigation | **Expo Router** | File-based, built for Expo, avoids extra React Navigation config |
-| Auth | **Supabase Auth** (email/OTP or magic link) | Skip password friction for MVP; magic link fits a calm, low-friction UX |
+| Auth | **Supabase Auth** (email + password) | Email confirmation disabled — `signUp` auto-confirms; `signInWithPassword` for returning users |
 | Book metadata | **Open Library API** | You've already integrated this before (book tracker project) — reuse that experience, free, no key required |
 | Notifications (schedule reminders) | **Expo Notifications** | Native local/push notifications without a separate service for MVP |
 | Recommendation logic (MVP) | **Rule-based scoring in a Supabase Edge Function** (weighted genre score + recency decay) | Don't reach for ML yet — a transparent weighted formula is easier to debug, explain, and iterate on than a black-box model, and it's enough to prove the loop works |
