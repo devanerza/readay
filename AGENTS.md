@@ -142,6 +142,62 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 ---
 
+### Phase 8 — Reading Session & Library Flow Fixes
+
+**Goal:** Complete the Start Reading → Session → End Session loop so it works end-to-end with real data.
+
+#### 8.1 — Wire Reading Session to Real Book Data
+- **Why:** `reading-session.tsx` still uses hardcoded mock data (book cover, avatar, Cicero quote). The timer and session-saving work, but the UI doesn't show the actual book being read.
+- **What to fix:**
+  1. Read `book_id` from the query params (already supported)
+  2. Fetch book details from the `books` table via `book_id`
+  3. Show the real cover image, title, and author instead of mock data
+  4. Keep the timer, pause, and End Session flow as-is
+  5. Remove the hardcoded quote/avatar/cover
+
+#### 8.2 — Library "Start Reading" Redirects to Reading Session
+- **Why:** The Library screen's "Start Reading" button (on the "Want to Read" tab) only toggles the queue item status to `reading` but does NOT navigate to the reading session screen. Users must manually find and tap the book again.
+- **What to fix:**
+  1. After `statusMutation` succeeds for `want_to_read → reading`, call `router.push(\`/reading-session?book_id=${item.book_id}\`)` so the user lands directly in the session
+  2. Use `onSuccess` of the mutation to navigate (after cache invalidation)
+
+#### 8.3 — Library "Start Reading" Also in Reading Tab
+- **Why:** The Reading tab shows books with status `reading` but no way to resume. Add a "Resume" button that also navigates to the reading session.
+- **What to fix:**
+  1. In the Reading tab's action row, if status is `reading`, show a "Resume" button instead of "Start Reading"
+  2. Both "Start Reading" (Want to Read) and "Resume" (Reading) navigate to the session
+
+---
+
+### Phase 9 — Home Screen Enhancements
+
+**Goal:** Make the Home screen more dynamic and useful for multi-book readers.
+
+#### 9.1 — Currently Reading Carousel
+- **Why:** Home screen "Currently Reading" section shows only 1 book (the top reading queue item). If a user reads multiple books simultaneously, only the most recent one appears.
+- **What to wire:**
+  1. Change `getCurrentlyReading` query (or add a new one) to return ALL books with status `reading`, ordered by recently updated
+  2. Replace the single hero card with a horizontal `ScrollView` carousel
+  3. Each card shows cover, title, author, and "Resume" button
+  4. When queue is empty, show the existing empty state CTA
+
+---
+
+### Phase 10 — Schedule Screen Cleanup
+
+**Goal:** Simplify the schedule screen to reduce cognitive load — show only user-created blocks, not an empty week grid.
+
+#### 10.1 — Remove Burden Days View
+- **Why:** The weekly calendar grid shows all 7 days even when empty, creating visual noise. Users only need their created blocks + an "Add Block" interface.
+- **What to fix:**
+  1. Remove the "Weekly Calendar" section showing all 7 days
+  2. Keep "Today's Blocks" section
+  3. Add a simple list of all blocks (flat, no day grid) below Today's section
+  4. Keep the "Add Block" button in the header and inline "+ Add block" CTAs
+  5. Keep the form for creating/editing blocks
+
+---
+
 ## 2. Definition of Done (per screen)
 
 A screen is done when it passes all of:
