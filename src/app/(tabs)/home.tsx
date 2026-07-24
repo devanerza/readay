@@ -3,11 +3,11 @@ import { View, Text, ScrollView, Image, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../stores/auth-store";
 import { getReadingStats } from "../../lib/reading-sessions";
-import { getCurrentlyReading, getNextRead, getQueueItems } from "../../lib/queue-items";
-import { getUpcomingBlock } from "../../lib/schedule-blocks";
+import { getAllCurrentlyReading, getNextRead, getQueueItems } from "../../lib/queue-items";
+import { getScheduleBlocks } from "../../lib/schedule-blocks";
+import { getProfile } from "../../lib/profiles";
 import TopAppBar from "../../components/TopAppBar";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { BookCardVertical } from "../../components/BookCard";
@@ -34,14 +34,8 @@ export default function Home() {
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("user_id", userId!)
-        .single();
-      return data;
-    },
+    queryFn: () => getProfile(userId!),
+    select: (d) => d ?? { display_name: null },
     enabled: !!userId,
   });
 
@@ -51,9 +45,9 @@ export default function Home() {
     enabled: !!userId,
   });
 
-  const { data: currentRead } = useQuery({
-    queryKey: ["currently-reading", userId],
-    queryFn: () => getCurrentlyReading(userId!),
+  const { data: readingItems = [] } = useQuery({
+    queryKey: ["all-reading", userId],
+    queryFn: () => getAllCurrentlyReading(userId!),
     enabled: !!userId,
   });
 
@@ -63,9 +57,9 @@ export default function Home() {
     enabled: !!userId,
   });
 
-  const { data: upcomingBlock } = useQuery({
-    queryKey: ["upcoming-block", userId],
-    queryFn: () => getUpcomingBlock(userId!),
+  const { data: scheduleBlocks = [] } = useQuery({
+    queryKey: ["schedule-blocks", userId],
+    queryFn: () => getScheduleBlocks(userId!),
     enabled: !!userId,
   });
 
@@ -80,21 +74,30 @@ export default function Home() {
   const greeting = getGreeting();
   const streakDays = stats?.streakDays ?? 0;
   const greetingSubtitle = getGreetingSubtitle(streakDays);
+  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const nextBlock = (() => {
+    const now = new Date();
+    const today = now.getDay();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    for (const b of scheduleBlocks) {
+      const [bh, bm] = b.start_time.split(":").map(Number);
+      const blockMinutes = bh * 60 + bm;
+      if (b.day_of_week === today && blockMinutes > currentMinutes) return b;
+      if (b.day_of_week > today) return b;
+    }
+    if (scheduleBlocks.length > 0) return scheduleBlocks[0];
+    return null;
+  })();
 
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           rightActions={[
-            { icon: "search", color: "#444841", onPress: () => router.push("/discover" as never) },
+            { icon: "settings", color: "#444841" },
           ]}
-          rightSlot={
-            <View className="w-8 h-8 rounded-full overflow-hidden border border-primary-container/10 bg-primary-container/20">
-              {currentRead?.books?.cover_url ? (
-                <Image source={{ uri: currentRead.books.cover_url }} className="w-full h-full" resizeMode="cover" />
-              ) : null}
-            </View>
-          }
         />
 
         <ScrollView
@@ -112,47 +115,118 @@ export default function Home() {
             </Text>
           </View>
 
-          {/* Hero: Continue Reading */}
-          {currentRead ? (
-            <View className="rounded-[24px] bg-surface-container overflow-hidden">
-              <View className="w-full h-48 overflow-hidden">
-                {currentRead.books?.cover_url ? (
-                  <Image source={{ uri: currentRead.books.cover_url }} className="w-full h-full" resizeMode="cover" />
-                ) : (
-                  <View className="flex-1 items-center justify-center bg-surface-variant">
-                    <Icon name="auto_stories" size={48} color="#747870" />
-                  </View>
-                )}
-              </View>
-              <View className="p-6 gap-4">
-                <View className="gap-1">
-                  <Text className="text-primary font-label-md uppercase tracking-widest">Currently Reading</Text>
-                  <Text className="font-headline-lg text-on-surface">
-                    {currentRead.books?.title ?? "Unknown title"}
-                  </Text>
-                  <Text className="text-on-surface-variant italic">
-                    {currentRead.books?.author ?? ""}
-                  </Text>
+          {/* Upcoming Session */}
+          {scheduleBlocks.length > 0 && nextBlock ? (
+            <View className="bg-primary rounded-[24px] p-6 gap-5">
+              <View className="flex-row items-start gap-5">
+                <View className={`${nextBlock.books ? "w-24 shrink-0 rounded-lg overflow-hidden" : "p-2 bg-white/20 rounded-xl self-start"}`}>
+                  {nextBlock.books?.cover_url ? (
+                    <Image source={{ uri: nextBlock.books.cover_url }} className="w-full aspect-[2/3]" resizeMode="cover" style={{ transform: [{ rotate: "-2deg" }] }} />
+                  ) : (
+                    <Icon name="schedule" size={22} color="#ffffff" />
+                  )}
                 </View>
-                {currentRead.books?.page_count ? (
-                  <View className="gap-1 w-full max-w-xs">
-                    <View className="flex-row justify-between items-end mb-1">
-                      <Text className="text-on-surface-variant font-label-md">Progress</Text>
-                      <Text className="text-primary font-label-md">—</Text>
+                <View className="flex-1 gap-2 pt-1">
+                  <View className="flex-row items-center gap-2">
+                    <View className="p-1.5 bg-white/20 rounded-lg">
+                      <Icon name="schedule" size={14} color="#ffffff" />
                     </View>
-                    <View className="h-1.5 w-full bg-primary-container/10 rounded-full overflow-hidden">
-                      <View className="h-full bg-primary rounded-full" style={{ width: "0%" }} />
-                    </View>
+                    <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming</Text>
                   </View>
-                ) : null}
-                <Pressable
-                  onPress={() => router.push(`/reading-session?book_id=${currentRead.book_id}`)}
-                  className="self-start bg-primary px-8 py-3.5 rounded-full active:scale-95 flex-row items-center gap-3"
-                >
-                  <Text className="text-white font-label-md">Resume Reading</Text>
-                  <Icon name="play_arrow" size={18} color="#ffffff" filled />
-                </Pressable>
+                  <View className="gap-0.5">
+                    <Text className="font-display text-[18px] leading-[22px] text-white">{nextBlock.label || "Reading Session"}</Text>
+                    {nextBlock.books ? (
+                      <Text className="text-white/70 font-body-md" numberOfLines={1}>{nextBlock.books.title}</Text>
+                    ) : null}
+                    {nextBlock.books?.author ? (
+                      <Text className="text-white/50 text-caption">{nextBlock.books.author}</Text>
+                    ) : null}
+                  </View>
+                  <Text className="text-white/80 font-body-md">
+                    {(() => {
+                      const now = new Date();
+                      const today = now.getDay();
+                      const [h, m] = nextBlock.start_time.split(":").map(Number);
+
+                      if (nextBlock.day_of_week === today) {
+                        const blockTime = new Date(); blockTime.setHours(h, m, 0);
+                        const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
+                        if (diff > 0) return `${nextBlock.start_time.slice(0, 5)} — in ${diff} min`;
+                        return `Scheduled for ${nextBlock.start_time.slice(0, 5)}`;
+                      }
+                      const daysFromNow = (nextBlock.day_of_week + 7 - today) % 7;
+                      if (daysFromNow === 1) return `Tomorrow at ${nextBlock.start_time.slice(0, 5)}`;
+                      return `${DAY_NAMES[nextBlock.day_of_week]} at ${nextBlock.start_time.slice(0, 5)}`;
+                    })()}
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push(nextBlock.books ? `/reading-session?book_id=${nextBlock.books.id}` : "/reading-session")}
+                    className="self-start mt-1 bg-white py-2.5 px-6 rounded-full active:opacity-90"
+                  >
+                    <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
+                  </Pressable>
+                </View>
               </View>
+              <Pressable onPress={() => router.push("/schedule" as never)} className="items-center">
+                <Text className="text-white/60 font-label-md text-xs">Manage Schedule</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => router.push("/schedule" as never)}
+              className="bg-surface-container-low rounded-[24px] p-8 items-center gap-4 active:bg-surface-container border border-dashed border-outline/30"
+            >
+              <View className="p-3 bg-primary/10 rounded-2xl">
+                <Icon name="schedule" size={28} color="#52634c" />
+              </View>
+              <View className="items-center gap-1">
+                <Text className="font-title-lg text-on-surface">Set Your Reading Schedule</Text>
+                <Text className="text-on-surface-variant font-body-md text-center max-w-[260px]">
+                  Pick a time to read — we'll remind you when it's time.
+                </Text>
+              </View>
+              <Text className="text-primary font-label-lg mt-1">Create Schedule</Text>
+            </Pressable>
+          )}
+
+          {/* Currently Reading Carousel */}
+          {readingItems.length > 0 ? (
+            <View className="gap-4">
+              <Text className="font-headline-md text-on-surface px-1">Currently Reading</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={{ gap: 16 }}
+              >
+                {readingItems.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
+                    className="w-44 rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                  >
+                    <View className="w-full h-56 bg-surface-variant">
+                      {item.books?.cover_url ? (
+                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                      ) : (
+                        <View className="flex-1 items-center justify-center">
+                          <Icon name="auto_stories" size={36} color="#747870" />
+                        </View>
+                      )}
+                    </View>
+                    <View className="p-3 gap-1">
+                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
+                      {item.books?.author ? (
+                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{item.books.author}</Text>
+                      ) : null}
+                      <View className="flex-row items-center gap-1 pt-1">
+                        <Icon name="play_arrow" size={14} color="#52634c" filled />
+                        <Text className="font-label-md text-primary text-xs">Resume</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
           ) : (
             <Pressable
@@ -203,58 +277,6 @@ export default function Home() {
               </View>
             </View>
           ) : null}
-
-          {/* Upcoming Session */}
-          {upcomingBlock ? (
-            <View className="bg-primary-container/20 border border-primary-container/20 rounded-[24px] p-6 gap-6">
-              <View className="gap-3">
-                <View className="p-3 bg-white/50 rounded-2xl self-start">
-                  <Icon name="schedule" size={26} color="#52634c" />
-                </View>
-                <View className="gap-1">
-                  <Text className="font-title-lg text-on-surface">{upcomingBlock.label || "Reading Session"}</Text>
-                  <Text className="text-on-surface-variant text-sm font-body-md">
-                    {(() => {
-                      const now = new Date();
-                      const [h, m] = upcomingBlock.start_time.split(":").map(Number);
-                      const blockTime = new Date(); blockTime.setHours(h, m, 0);
-                      const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
-                      if (diff > 0) return `Starts in ${diff} min — ${upcomingBlock.start_time.slice(0, 5)}`;
-                      return `Scheduled at ${upcomingBlock.start_time.slice(0, 5)}`;
-                    })()}
-                  </Text>
-                </View>
-              </View>
-              <View className="w-full gap-3">
-                <Pressable
-                  onPress={() => router.push("/reading-session")}
-                  className="w-full bg-white border border-primary-container/30 py-3 rounded-full items-center active:bg-primary"
-                >
-                  <Text className="text-primary font-label-md">Start Session</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => router.push("/schedule" as never)}
-                  className="w-full py-2 rounded-full items-center active:opacity-70"
-                >
-                  <Text className="text-on-surface-variant font-label-md text-sm">Manage Schedule</Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              onPress={() => router.push("/schedule" as never)}
-              className="bg-primary-container/10 border border-primary-container/20 rounded-[24px] p-6 items-center gap-3 active:bg-primary-container/20"
-            >
-              <View className="p-3 bg-white/50 rounded-2xl">
-                <Icon name="schedule" size={26} color="#52634c" />
-              </View>
-              <Text className="font-title-lg text-on-surface">Set Your Schedule</Text>
-              <Text className="text-on-surface-variant text-sm font-body-md text-center">
-                Plan your reading blocks to build a consistent habit.
-              </Text>
-              <Text className="text-primary font-label-md mt-2">Create Schedule</Text>
-            </Pressable>
-          )}
 
           {/* Recently Finished */}
           {finishedBooks && finishedBooks.length > 0 ? (

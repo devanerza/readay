@@ -19,12 +19,10 @@ export default function TopAppBar({ title = "ReadFlow", onBack, rightActions, ri
   return (
     <View className="w-full flex-row justify-between items-center px-margin-page py-4">
       <View className="flex-row items-center gap-4">
-        {onBack ? (
+        {onBack && (
           <Pressable onPress={onBack} className="p-2 -ml-2 active:bg-surface-container rounded-full">
             <Icon name="arrow_back" color="#52634c" />
           </Pressable>
-        ) : (
-          <Icon name="menu" color="#52634c" />
         )}
         <Text className="font-display text-headline-md text-primary ml-2">{title}</Text>
       </View>

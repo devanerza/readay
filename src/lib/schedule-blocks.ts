@@ -7,13 +7,23 @@ export type ScheduleBlock = {
   start_time: string;
   end_time: string;
   label: string;
+  book_id: string | null;
   created_at: string;
 };
 
-export async function getScheduleBlocks(userId: string): Promise<ScheduleBlock[]> {
+export type ScheduleBlockWithBook = ScheduleBlock & {
+  books: {
+    id: string;
+    title: string;
+    author: string | null;
+    cover_url: string | null;
+  } | null;
+};
+
+export async function getScheduleBlocks(userId: string): Promise<ScheduleBlockWithBook[]> {
   const { data } = await supabase
     .from('schedule_blocks')
-    .select('*')
+    .select('*, books(id, title, author, cover_url)')
     .eq('user_id', userId)
     .order('day_of_week', { ascending: true })
     .order('start_time', { ascending: true });
@@ -21,14 +31,14 @@ export async function getScheduleBlocks(userId: string): Promise<ScheduleBlock[]
   return data ?? [];
 }
 
-export async function getUpcomingBlock(userId: string): Promise<ScheduleBlock | null> {
+export async function getUpcomingBlock(userId: string): Promise<ScheduleBlockWithBook | null> {
   const now = new Date();
   const dayOfWeek = now.getDay();
   const time = now.toTimeString().slice(0, 5);
 
   const { data } = await supabase
     .from('schedule_blocks')
-    .select('*')
+    .select('*, books(id, title, author, cover_url)')
     .eq('user_id', userId)
     .gte('day_of_week', dayOfWeek)
     .order('day_of_week', { ascending: true })
@@ -45,6 +55,7 @@ export async function createScheduleBlock(block: {
   start_time: string;
   duration_minutes: number;
   label?: string;
+  book_id?: string | null;
 }) {
   const endMinutes = (parseInt(block.start_time.split(':')[0], 10) * 60 + parseInt(block.start_time.split(':')[1], 10) + block.duration_minutes);
   const endHour = Math.floor(endMinutes / 60) % 24;
@@ -57,6 +68,7 @@ export async function createScheduleBlock(block: {
     start_time: block.start_time,
     end_time,
     label: block.label ?? 'Reading Session',
+    book_id: block.book_id ?? null,
   });
   if (error) throw error;
 }
@@ -66,6 +78,7 @@ export async function updateScheduleBlock(id: string, updates: Partial<{
   start_time: string;
   duration_minutes: number;
   label: string;
+  book_id: string | null;
 }>) {
   const payload: any = { ...updates };
   if (updates.start_time && updates.duration_minutes) {

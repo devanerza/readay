@@ -4,9 +4,10 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth-store";
+import { getBook, getBookByOlId } from "../lib/books";
 import { getBookDetails, buildCoverUrl } from "../lib/open-library";
 import { cacheBookFromDetail } from "../lib/book-service";
-import { addToQueue } from "../lib/queue-items";
+import { addToQueue, getCurrentPage } from "../lib/queue-items";
 import { getReadingStats } from "../lib/reading-sessions";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
@@ -15,14 +16,32 @@ import Icon from "../components/Icon";
 
 export default function BookDetail() {
   const router = useRouter();
-  const { open_library_id } = useLocalSearchParams<{ open_library_id?: string }>();
+  const { book_id, open_library_id } = useLocalSearchParams<{ book_id?: string; open_library_id?: string }>();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
+  const [adding, setAdding] = React.useState(false);
 
-  const { data: detail, isLoading } = useQuery({
-    queryKey: ["ol-detail", open_library_id],
-    queryFn: () => getBookDetails(open_library_id!),
-    enabled: !!open_library_id,
+  const { data: localBook, isLoading: localLoading } = useQuery({
+    queryKey: ["local-book", book_id || open_library_id],
+    queryFn: () => book_id ? getBook(book_id) : getBookByOlId(open_library_id!),
+    enabled: !!(book_id || open_library_id),
+  });
+
+  const olId = open_library_id || localBook?.open_library_id;
+
+  const { data: detail, isLoading: olLoading } = useQuery({
+    queryKey: ["ol-detail", olId],
+    queryFn: () => getBookDetails(olId!),
+    enabled: !!olId,
+  });
+
+  const localBookId = book_id || localBook?.id;
+  const pageCount = localBook?.page_count ?? 0;
+
+  const { data: currentPage = 0 } = useQuery({
+    queryKey: ["current-page", localBookId, userId],
+    queryFn: () => getCurrentPage(localBookId!, userId!),
+    enabled: !!localBookId && !!userId,
   });
 
   const { data: stats } = useQuery({
@@ -31,18 +50,16 @@ export default function BookDetail() {
     enabled: !!userId,
   });
 
-  const [adding, setAdding] = React.useState(false);
-
   const displayCover = detail?.covers?.[0] ? buildCoverUrl(detail.covers[0]) : null;
   const displayDescription = typeof detail?.description === "string" ? detail.description : detail?.description?.value ?? null;
   const genreTags = detail?.subjects?.slice(0, 3) ?? [];
-  const estimateTime = null; // OL doesn't provide read time
+  const progressPct = pageCount > 0 ? Math.min((currentPage / pageCount) * 100, 100) : 0;
 
   const handleStartReading = async () => {
-    if (!userId || !open_library_id) return;
+    if (!userId || !olId) return;
     setAdding(true);
     try {
-      const bookId = await cacheBookFromDetail(open_library_id);
+      const bookId = await cacheBookFromDetail(olId);
       await addToQueue({ user_id: userId, book_id: bookId });
       router.push(`/reading-session?book_id=${bookId}`);
     } catch (e) {
@@ -54,10 +71,10 @@ export default function BookDetail() {
   };
 
   const handleAddToQueue = async () => {
-    if (!userId || !open_library_id) return;
+    if (!userId || !olId) return;
     setAdding(true);
     try {
-      const bookId = await cacheBookFromDetail(open_library_id);
+      const bookId = await cacheBookFromDetail(olId);
       await addToQueue({ user_id: userId, book_id: bookId });
       Alert.alert("Added", `${detail?.title ?? "Book"} added to your queue.`);
     } catch (e) {
@@ -68,7 +85,7 @@ export default function BookDetail() {
     }
   };
 
-  if (isLoading) return <LoadingOverlay />;
+  if (olLoading || localLoading) return <LoadingOverlay />;
 
   return (
     <View className="flex-1 bg-background">
@@ -113,10 +130,12 @@ export default function BookDetail() {
               {/* Stats */}
               <View className="flex-row gap-4 w-full mb-6">
                 <View className="flex-1 bg-surface-container-low p-4 rounded-xl">
-                  <Text className="text-caption text-outline uppercase tracking-wider mb-1">Time to Read</Text>
+                  <Text className="text-caption text-outline uppercase tracking-wider mb-1">Pages</Text>
                   <View className="flex-row items-center gap-2">
-                    <Icon name="schedule" size={18} color="#52634c" />
-                    <Text className="font-title-lg text-body-md text-primary">—</Text>
+                    <Icon name="auto_stories" size={18} color="#52634c" />
+                    <Text className="font-title-lg text-body-md text-primary">
+                      {pageCount > 0 ? pageCount : "—"}
+                    </Text>
                   </View>
                 </View>
                 <View className="flex-1 bg-surface-container-low p-4 rounded-xl">
@@ -163,7 +182,20 @@ export default function BookDetail() {
           )}
 
           {/* Reading Progress */}
-          {stats && stats.sessionsCount > 0 && (
+          {localBookId && pageCount > 0 ? (
+            <View className="px-margin-page mt-8">
+              <View className="bg-surface-container-high/40 p-6 rounded-2xl border border-surface-variant">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="font-title-lg text-on-surface">Your Reading</Text>
+                  <Text className="font-label-md text-primary">{currentPage} / {pageCount}</Text>
+                </View>
+                <ProgressBar progress={progressPct} />
+                <Text className="mt-3 text-caption text-on-surface-variant">
+                  {currentPage > 0 ? `${Math.round(progressPct)}% complete` : "Not started yet"}
+                </Text>
+              </View>
+            </View>
+          ) : stats && stats.sessionsCount > 0 ? (
             <View className="px-margin-page mt-8">
               <View className="bg-surface-container-high/40 p-6 rounded-2xl border border-surface-variant">
                 <View className="flex-row justify-between items-center mb-2">
@@ -176,7 +208,7 @@ export default function BookDetail() {
                 </Text>
               </View>
             </View>
-          )}
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </View>

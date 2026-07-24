@@ -28,3 +28,12 @@ export async function getBook(bookId: string): Promise<Book | null> {
     .single();
   return data;
 }
+
+export async function getBookByOlId(olId: string): Promise<Book | null> {
+  const { data } = await supabase
+    .from('books')
+    .select('*')
+    .eq('open_library_id', olId)
+    .maybeSingle();
+  return data;
+}

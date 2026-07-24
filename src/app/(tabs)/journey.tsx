@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
-import { View, Text, ScrollView, Image, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../stores/auth-store";
+import { getProfile } from "../../lib/profiles";
 import { getReadingStats, getWeeklySessionDays } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
 import { generateWeeklyInsight } from "../../lib/weekly-coach";
@@ -11,9 +11,6 @@ import TopAppBar from "../../components/TopAppBar";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import { BookCardVertical } from "../../components/BookCard";
 import ReflectionCard from "../../components/ReflectionCard";
-
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuAKwVJhO6wHYkdV1vz1r1gYoh2xOXFNkS3RbehH2CGT_cd_olE2Dt537qQxp_FSfDPTXWEZviB5ciNnCELMTGdPkILYaaChWc6XZELWd9ZTssK1A6OxSxc28kLPTY7NVcapDKaJKJDEPtJK84txAduIOe8KUSq0UM-XEYhIZpATOos9sImaS14jdaCubmZ7PlTi5MfCjEueMxoaVCVeFTeRjCULndzyYB5tXCK2br7rw4SDkE1_Tdc0Nw";
 
 const SEASONS = [
   { name: "Spring", months: [2, 3, 4] },
@@ -33,10 +30,7 @@ export default function Journey() {
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("genre_weights").eq("user_id", userId!).single();
-      return data;
-    },
+    queryFn: () => getProfile(userId!),
     enabled: !!userId,
   });
 
@@ -100,11 +94,7 @@ export default function Journey() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           title="ReadFlow"
-          rightSlot={
-            <View className="w-10 h-10 rounded-full overflow-hidden bg-surface-container border border-outline-variant">
-              <Image source={{ uri: AVATAR }} className="w-full h-full" resizeMode="cover" />
-            </View>
-          }
+          rightActions={[{ icon: "settings", color: "#444841" }]}
         />
 
         <ScrollView

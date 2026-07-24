@@ -85,13 +85,27 @@ export async function getWeeklySessionDays(userId: string, weeksBack: number = 4
   }));
 }
 
+function generateId(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 export async function createReadingSession(session: {
   user_id: string;
   book_id: string;
   duration_seconds: number;
   pages_read: number;
   date: string;
-}) {
-  const { error } = await supabase.from('reading_sessions').insert(session);
+}): Promise<string> {
+  const id = generateId();
+  const { error } = await supabase.from('reading_sessions').insert({ ...session, id });
+  if (error) throw error;
+  return id;
+}
+
+export async function updateSessionPages(sessionId: string, pagesRead: number) {
+  const { error } = await supabase.from('reading_sessions').update({ pages_read: pagesRead }).eq('id', sessionId);
   if (error) throw error;
 }

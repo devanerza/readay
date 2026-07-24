@@ -3,14 +3,11 @@ import { View, Text, TextInput, ScrollView, Image, Pressable, ImageBackground } 
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../stores/auth-store";
+import { getProfile } from "../../lib/profiles";
 import { searchBooks, getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
 import TopAppBar from "../../components/TopAppBar";
 import Icon from "../../components/Icon";
-
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDwK4X7VHY5GgwBRu4O5y49Fv2LwtFpX3_Lb7Xh77W0IjDV3XSXWKkYi3QJZqajtBAShgPv1TU4LBEuonL8LaYt3hGAsaNlVU0I32otBJ82_Py_2WyoMDirz9vSy2mLPTjRCagnA61DOk6XYA0oSFs9DZJcP-oaB22b35kHlEa6BTTbP1Yx8TAoak40FVsEGVEkZfxqzS7ITGo-lx2U9JggSIbrgdyKEaXBBdCU3QkCt7ItDAAM14a9JA";
 
 const GENRES = [
   { label: "All Curated" },
@@ -55,10 +52,7 @@ export default function Discover() {
 
   const { data: profile } = useQuery({
     queryKey: ["profile", userId],
-    queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("genre_weights").eq("user_id", userId!).single();
-      return data;
-    },
+    queryFn: () => getProfile(userId!),
     enabled: !!userId,
   });
 
@@ -95,13 +89,7 @@ export default function Discover() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar
-          rightSlot={
-            <View className="w-9 h-9 rounded-full overflow-hidden bg-primary-container/20">
-              <Image source={{ uri: AVATAR }} className="w-full h-full" resizeMode="cover" />
-            </View>
-          }
-        />
+        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
 
         <ScrollView
           className="flex-1 px-margin-page"

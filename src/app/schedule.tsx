@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Image, Modal, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth-store";
-import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock } from "../lib/schedule-blocks";
+import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, type ScheduleBlockWithBook } from "../lib/schedule-blocks";
+import { getQueueItems, type QueueItemWithBook } from "../lib/queue-items";
 import Icon from "../components/Icon";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -17,6 +18,7 @@ type FormState = {
   start_minute: string;
   duration_minutes: string;
   label: string;
+  book_id: string | null;
 };
 
 const emptyForm: FormState = {
@@ -25,6 +27,7 @@ const emptyForm: FormState = {
   start_minute: "00",
   duration_minutes: "20",
   label: "Reading Session",
+  book_id: null,
 };
 
 function formatTime(h: string, m: string) {
@@ -45,12 +48,21 @@ export default function Schedule() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [showForm, setShowForm] = useState(false);
+  const [showBookPicker, setShowBookPicker] = useState(false);
 
   const { data: blocks, isLoading } = useQuery({
     queryKey: ["schedule-blocks", userId],
     queryFn: () => getScheduleBlocks(userId!),
     enabled: !!userId,
   });
+
+  const { data: queueItems = [] } = useQuery({
+    queryKey: ["queue-all", userId],
+    queryFn: () => getQueueItems(userId!),
+    enabled: !!userId && showBookPicker,
+  });
+
+  const selectedBook = queueItems.find((q) => q.book_id === form.book_id)?.books ?? null;
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -60,6 +72,7 @@ export default function Schedule() {
           start_time: formatTime(form.start_hour, form.start_minute),
           duration_minutes: parseInt(form.duration_minutes, 10),
           label: form.label,
+          book_id: form.book_id,
         });
       } else {
         await createScheduleBlock({
@@ -68,6 +81,7 @@ export default function Schedule() {
           start_time: formatTime(form.start_hour, form.start_minute),
           duration_minutes: parseInt(form.duration_minutes, 10),
           label: form.label,
+          book_id: form.book_id,
         });
       }
     },
@@ -75,28 +89,30 @@ export default function Schedule() {
       queryClient.invalidateQueries({ queryKey: ["schedule-blocks", userId] });
       resetForm();
     },
-    onError: () => Alert.alert("Error", "Could not save schedule block."),
+    onError: (e) => Alert.alert("Error", `Could not save schedule block: ${e instanceof Error ? e.message : String(e)}`),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteScheduleBlock(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedule-blocks", userId] }),
-    onError: () => Alert.alert("Error", "Could not delete schedule block."),
+    onError: (e) => Alert.alert("Error", `Could not delete schedule block: ${e instanceof Error ? e.message : String(e)}`),
   });
 
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
     setShowForm(false);
+    setShowBookPicker(false);
   };
 
-  const editBlock = (block: any) => {
+  const editBlock = (block: ScheduleBlockWithBook) => {
     setForm({
       day_of_week: block.day_of_week,
       start_hour: block.start_time.slice(0, 2),
       start_minute: block.start_time.slice(3, 5),
       duration_minutes: String(parseDuration(block.start_time, block.end_time)),
       label: block.label,
+      book_id: block.book_id,
     });
     setEditingId(block.id);
     setShowForm(true);
@@ -104,14 +120,7 @@ export default function Schedule() {
 
   const today = new Date().getDay();
   const todayBlocks = blocks?.filter((b) => b.day_of_week === today) ?? [];
-  const weekBlocks = blocks ?? [];
-
-  const blocksByDay = DAY_NAMES.map((_, i) => ({
-    day: i,
-    dayName: DAY_NAMES[i],
-    fullDay: FULL_DAYS[i],
-    blocks: weekBlocks.filter((b) => b.day_of_week === i),
-  }));
+  const allBlocks = blocks?.slice().sort((a, b) => a.day_of_week - b.day_of_week) ?? [];
 
   if (isLoading) {
     return (
@@ -165,40 +174,34 @@ export default function Schedule() {
             )}
           </View>
 
-          {/* Weekly Calendar */}
+          {/* All Blocks */}
           <View className="gap-4">
-            <Text className="font-display text-title-lg text-on-surface">Weekly Calendar</Text>
-            <View className="gap-3">
-              {blocksByDay.map(({ day, dayName, fullDay, blocks: dayBlocks }) => (
-                <View key={day} className={`rounded-2xl p-4 ${day === today ? "bg-primary-container/10 border border-primary-container/20" : "bg-surface-container-low"}`}>
-                  <View className="flex-row justify-between items-center mb-2">
-                    <Text className={`font-label-md ${day === today ? "text-primary" : "text-on-surface-variant"}`}>
-                      {fullDay}{day === today ? " • Today" : ""}
-                    </Text>
-                    <Text className="text-caption text-outline">{dayBlocks.length} block{dayBlocks.length !== 1 ? "s" : ""}</Text>
-                  </View>
-                  {dayBlocks.length > 0 ? dayBlocks.map((block) => (
-                    <View key={block.id} className="flex-row justify-between items-center py-2 border-t border-surface-variant/30">
-                      <View className="flex-1">
-                        <Text className="font-title-lg text-on-surface">{block.label}</Text>
-                        <Text className="text-caption text-on-surface-variant">
-                          {block.start_time.slice(0, 5)} – {block.end_time.slice(0, 5)} ({parseDuration(block.start_time, block.end_time)} min)
-                        </Text>
-                      </View>
-                      <Pressable onPress={() => editBlock(block)} className="p-2 active:bg-surface-variant rounded-full">
-                        <Icon name="edit" size={18} color="#444841" />
-                      </Pressable>
-                    </View>
-                  )) : (
-                    <View className="py-2 border-t border-surface-variant/30">
-                      <Pressable onPress={() => { resetForm(); setForm((f) => ({ ...f, day_of_week: day })); setShowForm(true); }}>
-                        <Text className="text-primary font-label-md text-sm">+ Add block</Text>
-                      </Pressable>
-                    </View>
-                  )}
-                </View>
-              ))}
+            <View className="flex-row justify-between items-center">
+              <Text className="font-display text-title-lg text-on-surface">All Blocks</Text>
+              <Pressable onPress={() => { resetForm(); setShowForm(true); }}>
+                <Text className="text-primary font-label-md">+ Add</Text>
+              </Pressable>
             </View>
+            {allBlocks.length > 0 ? (
+              <View className="gap-3">
+                {allBlocks.map((block) => (
+                  <BlockCard key={block.id} block={block} onEdit={() => editBlock(block)} onDelete={() => {
+                    Alert.alert("Delete Block", `Remove "${block.label}"?`, [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Delete", style: "destructive", onPress: () => deleteMutation.mutate(block.id) },
+                    ]);
+                  }} />
+                ))}
+              </View>
+            ) : (
+              <View className="bg-surface-container-low rounded-2xl p-6 items-center gap-3">
+                <Icon name="schedule" size={32} color="#747870" />
+                <Text className="font-body-md text-on-surface-variant text-center">No reading blocks set.</Text>
+                <Pressable onPress={() => { resetForm(); setShowForm(true); }} className="mt-2">
+                  <Text className="text-primary font-label-md">Add your first block</Text>
+                </Pressable>
+              </View>
+            )}
           </View>
 
           {/* Add/Edit Form */}
@@ -223,6 +226,41 @@ export default function Schedule() {
                     placeholderTextColor="#747870"
                   />
                 </View>
+              </View>
+
+              {/* Book (optional) */}
+              <View className="gap-2">
+                <Text className="font-label-md text-on-surface-variant">Book (optional)</Text>
+                {selectedBook ? (
+                  <View className="flex-row items-center gap-3 bg-surface rounded-xl px-4 py-3">
+                    <View className="w-10 h-14 rounded overflow-hidden bg-surface-variant">
+                      {selectedBook.cover_url ? (
+                        <Image source={{ uri: selectedBook.cover_url }} className="w-full h-full" resizeMode="cover" />
+                      ) : (
+                        <View className="flex-1 items-center justify-center">
+                          <Text className="text-outline text-xs">{selectedBook.title?.[0] ?? "?"}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{selectedBook.title}</Text>
+                      {selectedBook.author ? (
+                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{selectedBook.author}</Text>
+                      ) : null}
+                    </View>
+                    <Pressable onPress={() => setForm((f) => ({ ...f, book_id: null }))} className="p-1">
+                      <Icon name="close" size={16} color="#747870" />
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() => setShowBookPicker(true)}
+                    className="bg-surface rounded-xl px-4 py-3.5 flex-row items-center gap-3 active:bg-surface-variant"
+                  >
+                    <Icon name="book_2" size={20} color="#747870" />
+                    <Text className="font-body-md text-on-surface-variant">Pick a book from your queue</Text>
+                  </Pressable>
+                )}
               </View>
 
               {/* Day */}
@@ -300,12 +338,63 @@ export default function Schedule() {
             </View>
           )}
         </ScrollView>
+
+        {/* Book Picker Modal */}
+        <Modal visible={showBookPicker} animationType="slide" transparent>
+          <View className="flex-1 bg-black/40">
+            <View className="flex-1 mt-24 bg-surface rounded-t-3xl">
+              <View className="flex-row justify-between items-center px-6 py-4 border-b border-surface-variant/30">
+                <Text className="font-display text-title-lg text-on-surface">Pick a Book</Text>
+                <Pressable onPress={() => setShowBookPicker(false)} className="p-1">
+                  <Icon name="close" size={20} color="#444841" />
+                </Pressable>
+              </View>
+              <FlatList
+                data={queueItems.filter((q) => q.books)}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={{ padding: 16, gap: 8 }}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => {
+                      setForm((f) => ({ ...f, book_id: item.book_id }));
+                      setShowBookPicker(false);
+                    }}
+                    className="flex-row items-center gap-3 p-3 rounded-xl active:bg-surface-variant"
+                  >
+                    <View className="w-12 h-16 rounded overflow-hidden bg-surface-variant">
+                      {item.books?.cover_url ? (
+                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                      ) : (
+                        <View className="flex-1 items-center justify-center">
+                          <Text className="text-outline text-xs">{item.books?.title?.[0] ?? "?"}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
+                      {item.books?.author ? (
+                        <Text className="text-caption text-on-surface-variant">{item.books.author}</Text>
+                      ) : null}
+                      <Text className="text-caption text-primary mt-0.5 capitalize">{item.status.replace(/_/g, " ")}</Text>
+                    </View>
+                  </Pressable>
+                )}
+                ListEmptyComponent={
+                  <View className="items-center py-12 gap-3">
+                    <Icon name="book_2" size={32} color="#747870" />
+                    <Text className="font-body-md text-on-surface-variant text-center">No books in your queue yet.{'\n'}Add books from Discover first.</Text>
+                  </View>
+                }
+              />
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </View>
   );
 }
 
-function BlockCard({ block, onEdit, onDelete }: { block: any; onEdit: () => void; onDelete: () => void }) {
+function BlockCard({ block, onEdit, onDelete }: { block: ScheduleBlockWithBook; onEdit: () => void; onDelete: () => void }) {
   const [sh, sm] = block.start_time.split(":").map(Number);
   const [eh, em] = block.end_time.split(":").map(Number);
   const duration = (eh * 60 + em) - (sh * 60 + sm);
@@ -314,13 +403,22 @@ function BlockCard({ block, onEdit, onDelete }: { block: any; onEdit: () => void
 
   return (
     <View className="bg-surface-container-low rounded-2xl p-5 flex-row items-center gap-4 border border-surface-variant/20">
-      <View className={`w-12 h-12 rounded-xl items-center justify-center ${isUpcoming ? "bg-primary/10" : "bg-surface-variant"}`}>
-        <Icon name="schedule" size={24} color={isUpcoming ? "#52634c" : "#747870"} />
-      </View>
-      <View className="flex-1 gap-1">
+      {block.books?.cover_url ? (
+        <View className="w-12 h-16 rounded-lg overflow-hidden bg-surface-variant shrink-0">
+          <Image source={{ uri: block.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+        </View>
+      ) : (
+        <View className={`w-12 h-12 rounded-xl items-center justify-center shrink-0 ${isUpcoming ? "bg-primary/10" : "bg-surface-variant"}`}>
+          <Icon name="schedule" size={24} color={isUpcoming ? "#52634c" : "#747870"} />
+        </View>
+      )}
+      <View className="flex-1 gap-0.5">
         <Text className="font-title-lg text-on-surface">{block.label}</Text>
+        {block.books ? (
+          <Text className="text-caption text-primary" numberOfLines={1}>{block.books.title}</Text>
+        ) : null}
         <Text className="text-caption text-on-surface-variant">
-          {block.start_time.slice(0, 5)} – {block.end_time.slice(0, 5)} • {duration} min
+          {FULL_DAYS[block.day_of_week]} • {block.start_time.slice(0, 5)} – {block.end_time.slice(0, 5)} • {duration} min
         </Text>
       </View>
       <View className="flex-row gap-2">

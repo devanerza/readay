@@ -7,7 +7,9 @@ export type QueueItem = {
   rank: number;
   reason_text: string;
   status: 'want_to_read' | 'reading' | 'finished';
+  current_page: number;
   created_at: string;
+  updated_at: string;
 };
 
 export type QueueItemWithBook = QueueItem & {
@@ -60,6 +62,17 @@ export async function getCurrentlyReading(userId: string): Promise<QueueItemWith
   return data;
 }
 
+export async function getAllCurrentlyReading(userId: string): Promise<QueueItemWithBook[]> {
+  const { data } = await supabase
+    .from('queue_items')
+    .select('*, books(*)')
+    .eq('user_id', userId)
+    .eq('status', 'reading')
+    .order('updated_at', { ascending: false });
+
+  return data ?? [];
+}
+
 export async function addToQueue(item: {
   user_id: string;
   book_id: string;
@@ -91,5 +104,24 @@ export async function updateQueueItemStatus(id: string, status: 'reading' | 'fin
 
 export async function deleteQueueItem(id: string) {
   const { error } = await supabase.from('queue_items').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function getCurrentPage(bookId: string, userId: string): Promise<number> {
+  const { data } = await supabase
+    .from('queue_items')
+    .select('current_page')
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return data?.current_page ?? 0;
+}
+
+export async function updateCurrentPage(bookId: string, userId: string, page: number) {
+  const { error } = await supabase
+    .from('queue_items')
+    .update({ current_page: page })
+    .eq('book_id', bookId)
+    .eq('user_id', userId);
   if (error) throw error;
 }

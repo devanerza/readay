@@ -35,12 +35,16 @@ export default function Library() {
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'reading' | 'finished' | 'want_to_read' }) =>
       updateQueueItemStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["queue-items", userId] });
       queryClient.invalidateQueries({ queryKey: ["queue-count", userId] });
       queryClient.invalidateQueries({ queryKey: ["finished-books", userId] });
       queryClient.invalidateQueries({ queryKey: ["currently-reading", userId] });
       queryClient.invalidateQueries({ queryKey: ["next-read", userId] });
+      if (variables.status === 'reading') {
+        const item = filteredItems.find((i) => i.id === variables.id);
+        if (item) router.push(`/reading-session?book_id=${item.book_id}`);
+      }
     },
     onError: () => Alert.alert("Error", "Could not update book status."),
   });
@@ -70,7 +74,7 @@ export default function Library() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           title="Library"
-          rightActions={[{ icon: "search", color: "#444841", onPress: () => router.push("/discover" as never) }]}
+          rightActions={[{ icon: "settings", color: "#444841" }]}
         />
 
         <TabSwitcher
@@ -140,14 +144,21 @@ export default function Library() {
 
                 {/* Actions */}
                 <View className="flex-row border-t border-surface-variant/20">
-                  {next && (
+                  {item.status === "reading" ? (
+                    <Pressable
+                      onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
+                      className="flex-1 py-3 items-center active:bg-surface-variant"
+                    >
+                      <Text className="font-label-md text-primary text-sm">Resume</Text>
+                    </Pressable>
+                  ) : next ? (
                     <Pressable
                       onPress={() => statusMutation.mutate({ id: item.id, status: next.status })}
                       className="flex-1 py-3 items-center active:bg-surface-variant"
                     >
                       <Text className="font-label-md text-primary text-sm">{next.label}</Text>
                     </Pressable>
-                  )}
+                  ) : null}
                   <Pressable
                     onPress={() => {
                       Alert.alert("Remove Book", `Remove "${item.books?.title ?? "this book"}" from your library?`, [
@@ -155,7 +166,7 @@ export default function Library() {
                         { text: "Remove", style: "destructive", onPress: () => deleteMutation.mutate(item.id) },
                       ]);
                     }}
-                    className="flex-1 py-3 items-center active:bg-surface-variant border-l border-surface-variant/20"
+                    className={`flex-1 py-3 items-center active:bg-surface-variant ${next || item.status === "reading" ? "border-l border-surface-variant/20" : ""}`}
                   >
                     <Text className="font-label-md text-error text-sm">Remove</Text>
                   </Pressable>

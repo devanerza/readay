@@ -2,18 +2,44 @@ import React from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../lib/supabase";
 import { useAuthStore } from "../../stores/auth-store";
+import { getProfile } from "../../lib/profiles";
 import { getReadingStats } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
 import TopAppBar from "../../components/TopAppBar";
 import StatTile from "../../components/StatTile";
 import LoadingOverlay from "../../components/LoadingOverlay";
 import Icon, { type IconName } from "../../components/Icon";
-import { Image } from "react-native";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuA0CvZZrlHSgjnin_taqdIGVHXPhEaumpIRAuwhqkrmLFwnSzp4G7tbHG1n51-bZaGAoBy9Z-kJIKV6536Vp8AZtpZG3d_T_WPDKvSLz9G8VZveA8v7vStsHMgvXdZ0mZ6Ew4Bs8vUepHTHFDQIO2AyWTdM3gu7vTZL5-pQt4qZyC-LeFb2bKlS9GRF0pN1sp68Exqj1x3TvHOVYnndVgq2aIx4sTz4sj1GRnXjXrzVO7R9N2nGgOiSSw";
+const QUOTES = [
+  "A reader lives a thousand lives before they die.",
+  "Today a reader, tomorrow a leader.",
+  "Reading is to the mind what exercise is to the body.",
+  "So many books, so little time.",
+  "The more that you read, the more things you will know.",
+  "Books are a uniquely portable magic.",
+  "Reading is an exercise in empathy.",
+  "A room without books is like a body without a soul.",
+];
+
+const seasonMantras = [
+  "Spring has sprung, and so has your reading",
+  "Summer days were made for page-turning",
+  "Autumn leaves and dog-eared pages",
+  "Winter nights, bookish lights",
+];
+
+function getSeasonMantra(): string {
+  const month = new Date().getMonth();
+  if (month >= 2 && month <= 4) return seasonMantras[0];
+  if (month >= 5 && month <= 7) return seasonMantras[1];
+  if (month >= 8 && month <= 10) return seasonMantras[2];
+  return seasonMantras[3];
+}
+
+function getRandomQuote(): string {
+  return QUOTES[Math.floor(Math.random() * QUOTES.length)];
+}
 
 const PREFERENCES: { icon: IconName; label: string; value: string }[] = [
   { icon: "wb_twilight", label: "Preferred Timing", value: "Evening" },
@@ -27,14 +53,7 @@ export default function Profile() {
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", userId!)
-        .single();
-      return data;
-    },
+    queryFn: () => getProfile(userId!),
     enabled: !!userId,
   });
 
@@ -66,13 +85,7 @@ export default function Profile() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar
-          rightSlot={
-            <View className="w-10 h-10 rounded-full overflow-hidden bg-surface-container-high border border-surface-variant">
-              <Image source={{ uri: AVATAR }} className="w-full h-full" resizeMode="cover" />
-            </View>
-          }
-        />
+        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
 
         <ScrollView
           className="flex-1 px-margin-page"
@@ -80,21 +93,16 @@ export default function Profile() {
           showsVerticalScrollIndicator={false}
         >
           {/* Profile Header */}
-          <View className="items-center mt-2">
-            <View className="mb-4">
-              <View className="w-24 h-24 rounded-full overflow-hidden bg-surface-container-lowest">
-                <Image source={{ uri: AVATAR }} className="w-full h-full" resizeMode="cover" />
-              </View>
-              <Pressable className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full items-center justify-center border-4 border-surface">
-                <Icon name="edit" size={14} color="#ffffff" />
-              </Pressable>
+          <View className="items-center mt-8 gap-4 px-4">
+            <Text className="font-display text-[22px] leading-[30px] text-on-surface text-center italic">
+              "{getRandomQuote()}"
+            </Text>
+            <View className="flex-row items-center gap-2">
+              <View className="h-px w-6 bg-outline/30" />
+              <Text className="font-title-lg text-on-surface-variant">{profile?.display_name ?? "Reader"}</Text>
+              <View className="h-px w-6 bg-outline/30" />
             </View>
-            <Text className="font-display text-headline-lg-mobile text-on-surface">
-              {profile?.display_name ?? "Reader"}
-            </Text>
-            <Text className="font-body-md text-on-surface-variant opacity-70">
-              Curating a life through prose.
-            </Text>
+            <Text className="font-body-md text-primary">{getSeasonMantra()}</Text>
           </View>
 
           {/* Reading Goal */}

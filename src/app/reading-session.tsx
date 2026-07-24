@@ -1,61 +1,94 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Image, Alert } from "react-native";
+import { View, Text, Pressable, Image, Alert, TextInput } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createReadingSession } from "../lib/reading-sessions";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createReadingSession, updateSessionPages } from "../lib/reading-sessions";
+import { getBook } from "../lib/books";
+import { getCurrentPage, updateCurrentPage } from "../lib/queue-items";
 import { useAuthStore } from "../stores/auth-store";
 import Icon from "../components/Icon";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
+import LoadingOverlay from "../components/LoadingOverlay";
 
-const AVATAR =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDRtkBbBNjD_sPAgL4uqDSQ4VxoNKF1p0y7Jp_UoVXQY39g17SC1fcD9Nw_GY37Uc5jz2RcK8IeTPVXP9lOcUFmBNneOMf9GR721-5focyJ98W0Xr-bbRGObJ_SIWROh1-QKxmsoYhWy-YuKm-B5LLGbtP7gSZRrWpbMvtJrfQW1kTCkHuRXtGRG3B1lN8Tv6KLrq5dh2U2CpXfogGMnMS-IR_Fx0R7iAzr-okTqYtt42bUy4iDkLQV6A";
-
-const BOOK_COVER =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuCkxuLGaqK3w_yaJP2f-0OzssqoeCmJrigwFw8SN_AxlMDcjHwmD9O1ROCH2KQLYf4ncTOd7siV89fWiB1lXwuuteK4hyfIb-rT1u9X-s1892B9hB73mK5qy7rzp73-YZC4bQw0_4HQO5DZ99SxWwCi3kAQJrz6GwVM9qu8Toz6wETJTYUOvyj_3jvKx3g1tpvl36zIT9H16uApkUlYBdoaPIMrPD7ExNV1lR9XvFDOnl9oy2tk_qjQow";
-
-const TOTAL_SECONDS = 900;
-const ESTIMATED_PAGES_PER_MIN = 2;
+const QUICK_OPTIONS = [5, 10, 15, 20, 30, 45];
 
 export default function ReadingSession() {
   const router = useRouter();
   const { book_id } = useLocalSearchParams<{ book_id?: string }>();
   const session = useAuthStore((s) => s.session);
-  const [seconds, setSeconds] = useState(TOTAL_SECONDS);
+  const userId = session?.user.id;
+  const queryClient = useQueryClient();
+  const [phase, setPhase] = useState<"duration" | "reading" | "page-input">("duration");
+  const [totalSeconds, setTotalSeconds] = useState(0);
+  const [seconds, setSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
+  const [customMin, setCustomMin] = useState("20");
+  const [pageInput, setPageInput] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endedRef = useRef(false);
+  const endSessionRef = useRef<() => void>(() => {});
+
+  const { data: book, isLoading } = useQuery({
+    queryKey: ["session-book", book_id],
+    queryFn: () => getBook(book_id!),
+    enabled: !!book_id && book_id !== 'unknown',
+  });
+
+  const { data: currentPage = 0 } = useQuery({
+    queryKey: ["current-page", book_id, userId],
+    queryFn: () => getCurrentPage(book_id!, userId!),
+    enabled: !!book_id && !!userId && book_id !== 'unknown',
+  });
+
+  const elapsedSeconds = totalSeconds - seconds;
+
+  const startSession = (minutes: number) => {
+    const total = minutes * 60;
+    setTotalSeconds(total);
+    setSeconds(total);
+    setIsPaused(false);
+    setPhase("reading");
+    endedRef.current = false;
+  };
 
   useEffect(() => {
+    if (phase !== "reading") return;
     intervalRef.current = setInterval(() => {
       setSeconds((s) => {
         if (isPaused || s <= 0) return s;
-        return s - 1;
+        const next = s - 1;
+        if (next <= 0 && !endedRef.current) {
+          endedRef.current = true;
+          endSessionRef.current();
+        }
+        return next;
       });
     }, 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPaused]);
-
-  const elapsedSeconds = TOTAL_SECONDS - seconds;
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  const estimatedPages = Math.round(elapsedMinutes * ESTIMATED_PAGES_PER_MIN);
+  }, [phase, isPaused]);
 
   const handleEndSession = async () => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     if (elapsedSeconds < 10) { router.back(); return; }
 
     setSaving(true);
     try {
-      await createReadingSession({
-        user_id: session.user.id,
+      const id = await createReadingSession({
+        user_id: userId,
         book_id: book_id ?? 'unknown',
         duration_seconds: elapsedSeconds,
-        pages_read: estimatedPages,
+        pages_read: 0,
         date: new Date().toISOString(),
       });
-      router.back();
+      setSavedSessionId(id);
+      setPageInput(currentPage > 0 ? String(currentPage) : "");
+      setPhase("page-input");
     } catch {
       Alert.alert("Error", "Could not save session.");
     } finally {
@@ -63,32 +96,165 @@ export default function ReadingSession() {
     }
   };
 
+  endSessionRef.current = handleEndSession;
+
+  const handleSavePage = async () => {
+    const page = parseInt(pageInput, 10);
+    if (isNaN(page) || page <= 0) { router.back(); return; }
+    if (!savedSessionId || !book_id || !userId) { router.back(); return; }
+
+    try {
+      const pagesRead = page - currentPage;
+      await updateSessionPages(savedSessionId, Math.max(pagesRead, 0));
+      await updateCurrentPage(book_id, userId, page);
+      queryClient.invalidateQueries({ queryKey: ["current-page", book_id, userId] });
+      queryClient.invalidateQueries({ queryKey: ["reading-stats", userId] });
+      router.back();
+    } catch {
+      Alert.alert("Error", "Could not save page.");
+    }
+  };
+
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const timeLabel = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  const progressPct = (seconds / TOTAL_SECONDS) * 100;
+  const progressPct = totalSeconds > 0 ? (seconds / totalSeconds) * 100 : 0;
+
+  if (phase === "page-input") {
+    return (
+      <View className="flex-1 bg-surface">
+        <SafeAreaView edges={["top"]} className="flex-1">
+          <TopAppBar onBack={() => router.back()} />
+          <View className="flex-1 items-center justify-center px-margin-page gap-8">
+            <View className="items-center gap-3">
+              <View className="p-4 bg-primary/10 rounded-3xl">
+                <Icon name="auto_stories" size={36} color="#52634c" />
+              </View>
+              <Text className="font-display text-headline-md text-on-surface text-center">
+                What page did you{'\n'}reach?
+              </Text>
+              {book ? (
+                <Text className="font-body-md text-on-surface-variant">{book.title}</Text>
+              ) : null}
+            </View>
+
+            <View className="items-center gap-6">
+              <View className="flex-row items-center gap-3">
+                <View className="bg-surface-container-low rounded-xl px-5 py-3 w-28">
+                  <TextInput
+                    className="font-display text-headline-lg-mobile text-on-surface text-center"
+                    value={pageInput}
+                    onChangeText={(v) => setPageInput(v.replace(/\D/g, "").slice(0, 5))}
+                    keyboardType="number-pad"
+                    maxLength={5}
+                    autoFocus
+                    selectTextOnFocus
+                  />
+                </View>
+                <Text className="font-body-lg text-on-surface-variant">of {book?.page_count ?? "—"} pages</Text>
+              </View>
+
+              <View className="flex-row gap-4">
+                <Pressable
+                  onPress={() => router.back()}
+                  className="px-6 py-3.5 rounded-full bg-surface-variant active:opacity-80"
+                >
+                  <Text className="font-label-lg text-on-surface-variant">Skip</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSavePage}
+                  className="px-8 py-3.5 rounded-full bg-primary active:opacity-90"
+                >
+                  <Text className="text-on-primary font-label-lg">Save</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  if (phase === "duration") {
+    return (
+      <View className="flex-1 bg-surface">
+        <SafeAreaView edges={["top"]} className="flex-1">
+          <TopAppBar onBack={() => router.back()} />
+          <View className="flex-1 items-center justify-center px-margin-page gap-8">
+            <View className="items-center gap-3">
+              <View className="p-4 bg-primary/10 rounded-3xl">
+                <Icon name="timer" size={36} color="#52634c" />
+              </View>
+              <Text className="font-display text-headline-md text-on-surface text-center">
+                How long will{'\n'}you read?
+              </Text>
+            </View>
+
+            <View className="flex-row flex-wrap justify-center gap-3">
+              {QUICK_OPTIONS.map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => startSession(m)}
+                  className="px-6 py-3.5 rounded-full bg-primary-container/20 active:bg-primary-container/40"
+                >
+                  <Text className="font-label-lg text-primary">{m} min</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            <View className="items-center gap-4">
+              <Text className="font-body-md text-on-surface-variant">or set custom</Text>
+              <View className="flex-row items-center gap-3">
+                <View className="bg-surface-container-low rounded-xl px-4 py-2.5 w-20">
+                  <TextInput
+                    className="font-display text-headline-md text-on-surface text-center"
+                    value={customMin}
+                    onChangeText={(v) => setCustomMin(v.replace(/\D/g, "").slice(0, 3))}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                  />
+                </View>
+                <Text className="font-body-lg text-on-surface-variant">min</Text>
+              </View>
+              <Pressable
+                onPress={() => {
+                  const m = parseInt(customMin, 10);
+                  if (m > 0) startSession(m);
+                }}
+                className="px-10 py-3.5 rounded-full bg-primary active:opacity-90"
+              >
+                <Text className="text-on-primary font-label-lg">Start Reading</Text>
+              </Pressable>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  if (isLoading) return <LoadingOverlay />;
 
   return (
     <View className="flex-1 bg-surface" style={isPaused ? { opacity: 0.8 } : undefined}>
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar
-          onBack={() => router.back()}
-          rightActions={[{ icon: "settings", color: "#52634c" }]}
-          rightSlot={
-            <View className="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant">
-              <Image source={{ uri: AVATAR }} className="w-full h-full" resizeMode="cover" />
-            </View>
-          }
-        />
+        <TopAppBar onBack={() => router.back()} />
 
-        {/* Focus Canvas */}
         <View className="flex-1 items-center justify-center px-margin-page">
-          {/* Book cover */}
-          <View className="mb-10 w-48 aspect-[2/3] rounded-lg overflow-hidden">
-            <Image source={{ uri: BOOK_COVER }} className="w-full h-full" resizeMode="cover" />
+          <View className="mb-6 w-40 aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
+            {book?.cover_url ? (
+              <Image source={{ uri: book.cover_url }} className="w-full h-full" resizeMode="cover" />
+            ) : (
+              <View className="flex-1 items-center justify-center">
+                <Text className="text-outline font-display text-headline-xl">{book?.title?.[0] ?? "?"}</Text>
+              </View>
+            )}
           </View>
 
-          {/* Timer */}
+          <Text className="font-title-lg text-on-surface text-center mb-1">{book?.title ?? "Reading"}</Text>
+          {book?.author ? (
+            <Text className="font-body-md text-on-surface-variant italic mb-8">{book.author}</Text>
+          ) : null}
+
           <View className="items-center gap-2 mb-10">
             <View className="flex-row items-center gap-3">
               <Icon name="timer" size={22} color="#52634c" filled />
@@ -98,23 +264,8 @@ export default function ReadingSession() {
             <View className="w-48 mt-2">
               <ProgressBar progress={progressPct} />
             </View>
-            <Text className="font-label-md text-on-surface-variant mt-2">
-              {estimatedPages > 0 ? `${estimatedPages} pages read tonight` : "Starting your session..."}
-            </Text>
           </View>
 
-          {/* Quote */}
-          <View className="max-w-md items-center px-4 mb-10">
-            <Icon name="format_quote" size={28} color="rgba(82,99,76,0.3)" />
-            <Text className="font-headline-md text-on-surface italic text-center leading-relaxed mt-2">
-              "A room without books is like a body without a soul."
-            </Text>
-            <Text className="font-label-md text-outline mt-4 uppercase tracking-[0.2em] text-[10px]">
-              Marcus Tullius Cicero
-            </Text>
-          </View>
-
-          {/* Controls */}
           <View className="flex-row items-center gap-8">
             <Pressable
               onPress={() => setIsPaused((p) => !p)}
@@ -129,9 +280,6 @@ export default function ReadingSession() {
             >
               <Icon name="stop_circle" size={16} color="#ffffff" />
               <Text className="text-on-primary font-label-md">{saving ? "Saving…" : "End Session"}</Text>
-            </Pressable>
-            <Pressable className="w-14 h-14 items-center justify-center rounded-full bg-surface-container border border-outline-variant active:scale-90">
-              <Icon name="auto_awesome" color="#52634c" />
             </Pressable>
           </View>
         </View>
