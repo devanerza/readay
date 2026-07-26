@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Image, Alert, TextInput } from "react-native";
+import { View, Text, Pressable, Image, Alert, TextInput, Modal } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,17 +20,19 @@ export default function ReadingSession() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
   const queryClient = useQueryClient();
-  const [phase, setPhase] = useState<"duration" | "reading" | "page-input">("duration");
+  const [phase, setPhase] = useState<"duration" | "reading">("duration");
   const [totalSeconds, setTotalSeconds] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showPageInput, setShowPageInput] = useState(false);
   const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
   const [customMin, setCustomMin] = useState("20");
   const [pageInput, setPageInput] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endedRef = useRef(false);
   const endSessionRef = useRef<() => void>(() => {});
+  const elapsedRef = useRef(0);
 
   const { data: book, isLoading } = useQuery({
     queryKey: ["session-book", book_id],
@@ -45,6 +47,7 @@ export default function ReadingSession() {
   });
 
   const elapsedSeconds = totalSeconds - seconds;
+  elapsedRef.current = elapsedSeconds;
 
   const startSession = (minutes: number) => {
     const total = minutes * 60;
@@ -75,22 +78,23 @@ export default function ReadingSession() {
 
   const handleEndSession = async () => {
     if (!userId) return;
-    if (elapsedSeconds < 10) { router.back(); return; }
+    if (elapsedRef.current < 10) { router.back(); return; }
 
     setSaving(true);
     try {
       const id = await createReadingSession({
         user_id: userId,
         book_id: book_id ?? 'unknown',
-        duration_seconds: elapsedSeconds,
+        duration_seconds: elapsedRef.current,
         pages_read: 0,
         date: new Date().toISOString(),
       });
       setSavedSessionId(id);
       setPageInput(currentPage > 0 ? String(currentPage) : "");
-      setPhase("page-input");
-    } catch {
-      Alert.alert("Error", "Could not save session.");
+      setShowPageInput(true);
+    } catch (e) {
+      Alert.alert("Error", e instanceof Error ? e.message : String(e));
+      router.back();
     } finally {
       setSaving(false);
     }
@@ -119,61 +123,6 @@ export default function ReadingSession() {
   const secs = seconds % 60;
   const timeLabel = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   const progressPct = totalSeconds > 0 ? (seconds / totalSeconds) * 100 : 0;
-
-  if (phase === "page-input") {
-    return (
-      <View className="flex-1 bg-surface">
-        <SafeAreaView edges={["top"]} className="flex-1">
-          <TopAppBar onBack={() => router.back()} />
-          <View className="flex-1 items-center justify-center px-margin-page gap-8">
-            <View className="items-center gap-3">
-              <View className="p-4 bg-primary/10 rounded-3xl">
-                <Icon name="auto_stories" size={36} color="#52634c" />
-              </View>
-              <Text className="font-display text-headline-md text-on-surface text-center">
-                What page did you{'\n'}reach?
-              </Text>
-              {book ? (
-                <Text className="font-body-md text-on-surface-variant">{book.title}</Text>
-              ) : null}
-            </View>
-
-            <View className="items-center gap-6">
-              <View className="flex-row items-center gap-3">
-                <View className="bg-surface-container-low rounded-xl px-5 py-3 w-28">
-                  <TextInput
-                    className="font-display text-headline-lg-mobile text-on-surface text-center"
-                    value={pageInput}
-                    onChangeText={(v) => setPageInput(v.replace(/\D/g, "").slice(0, 5))}
-                    keyboardType="number-pad"
-                    maxLength={5}
-                    autoFocus
-                    selectTextOnFocus
-                  />
-                </View>
-                <Text className="font-body-lg text-on-surface-variant">of {book?.page_count ?? "—"} pages</Text>
-              </View>
-
-              <View className="flex-row gap-4">
-                <Pressable
-                  onPress={() => router.back()}
-                  className="px-6 py-3.5 rounded-full bg-surface-variant active:opacity-80"
-                >
-                  <Text className="font-label-lg text-on-surface-variant">Skip</Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleSavePage}
-                  className="px-8 py-3.5 rounded-full bg-primary active:opacity-90"
-                >
-                  <Text className="text-on-primary font-label-lg">Save</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
-  }
 
   if (phase === "duration") {
     return (
@@ -284,6 +233,59 @@ export default function ReadingSession() {
           </View>
         </View>
       </SafeAreaView>
+
+      {/* Page Input Modal */}
+      <Modal visible={showPageInput} animationType="slide" transparent>
+        <View className="flex-1 bg-black/40">
+          <View className="flex-1 justify-end">
+            <View className="bg-surface rounded-t-3xl p-8 pb-12 gap-8">
+              <View className="items-center gap-3">
+                <View className="p-4 bg-primary/10 rounded-3xl">
+                  <Icon name="auto_stories" size={36} color="#52634c" />
+                </View>
+                <Text className="font-display text-headline-md text-on-surface text-center">
+                  What page did you{'\n'}reach?
+                </Text>
+                {book ? (
+                  <Text className="font-body-md text-on-surface-variant">{book.title}</Text>
+                ) : null}
+              </View>
+
+              <View className="items-center gap-6">
+                <View className="flex-row items-center gap-3">
+                  <View className="bg-surface-container-low rounded-xl px-5 py-3 w-28">
+                    <TextInput
+                      className="font-display text-headline-lg-mobile text-on-surface text-center"
+                      value={pageInput}
+                      onChangeText={(v) => setPageInput(v.replace(/\D/g, "").slice(0, 5))}
+                      keyboardType="number-pad"
+                      maxLength={5}
+                      autoFocus
+                      selectTextOnFocus
+                    />
+                  </View>
+                  <Text className="font-body-lg text-on-surface-variant">of {book?.page_count ?? "—"} pages</Text>
+                </View>
+
+                <View className="flex-row gap-4">
+                  <Pressable
+                    onPress={() => router.back()}
+                    className="px-6 py-3.5 rounded-full bg-surface-variant active:opacity-80"
+                  >
+                    <Text className="font-label-lg text-on-surface-variant">Skip</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleSavePage}
+                    className="px-8 py-3.5 rounded-full bg-primary active:opacity-90"
+                  >
+                    <Text className="text-on-primary font-label-lg">Save</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
