@@ -8,7 +8,7 @@ import { getQueueItems, updateQueueItemStatus, deleteQueueItem } from "../../lib
 import TopAppBar from "../../components/TopAppBar";
 import TabSwitcher from "../../components/TabSwitcher";
 import EmptyState from "../../components/EmptyState";
-import LoadingOverlay from "../../components/LoadingOverlay";
+import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import Icon from "../../components/Icon";
 
 const TABS = [
@@ -67,7 +67,7 @@ export default function Library() {
     return null;
   };
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading) return <LibrarySkeleton />;
 
   return (
     <View className="flex-1 bg-surface">

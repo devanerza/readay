@@ -8,7 +8,7 @@ import { getReadingStats, getWeeklySessionDays } from "../../lib/reading-session
 import { getQueueItems } from "../../lib/queue-items";
 import { generateWeeklyInsight } from "../../lib/weekly-coach";
 import TopAppBar from "../../components/TopAppBar";
-import LoadingOverlay from "../../components/LoadingOverlay";
+import { JourneySkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
 import ReflectionCard from "../../components/ReflectionCard";
 
@@ -87,7 +87,7 @@ export default function Journey() {
 
   const isLoading = statsLoading || insightLoading;
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading) return <JourneySkeleton />;
 
   return (
     <View className="flex-1 bg-surface">

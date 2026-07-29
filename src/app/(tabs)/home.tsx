@@ -5,11 +5,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getReadingStats } from "../../lib/reading-sessions";
-import { getAllCurrentlyReading, getNextRead, getQueueItems } from "../../lib/queue-items";
+import { getAllCurrentlyReading, getQueueItems } from "../../lib/queue-items";
 import { getScheduleBlocks } from "../../lib/schedule-blocks";
 import { getProfile } from "../../lib/profiles";
 import TopAppBar from "../../components/TopAppBar";
-import LoadingOverlay from "../../components/LoadingOverlay";
+import { HomeSkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
 import Icon from "../../components/Icon";
 
@@ -32,7 +32,7 @@ export default function Home() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
 
-  const { data: profile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", userId],
     queryFn: () => getProfile(userId!),
     select: (d) => d ?? { display_name: null },
@@ -45,31 +45,31 @@ export default function Home() {
     enabled: !!userId,
   });
 
-  const { data: readingItems = [] } = useQuery({
+  const { data: readingItems = [], isLoading: readingLoading } = useQuery({
     queryKey: ["all-reading", userId],
     queryFn: () => getAllCurrentlyReading(userId!),
     enabled: !!userId,
   });
 
-  const { data: nextRead } = useQuery({
-    queryKey: ["next-read", userId],
-    queryFn: () => getNextRead(userId!),
+  const { data: wantToReadItems = [], isLoading: wantLoading } = useQuery({
+    queryKey: ["want-to-read", userId],
+    queryFn: () => getQueueItems(userId!, 'want_to_read'),
     enabled: !!userId,
   });
 
-  const { data: scheduleBlocks = [] } = useQuery({
+  const { data: scheduleBlocks = [], isLoading: scheduleLoading } = useQuery({
     queryKey: ["schedule-blocks", userId],
     queryFn: () => getScheduleBlocks(userId!),
     enabled: !!userId,
   });
 
-  const { data: finishedBooks } = useQuery({
+  const { data: finishedBooks, isLoading: finishedLoading } = useQuery({
     queryKey: ["finished-books", userId],
     queryFn: () => getQueueItems(userId!, 'finished'),
     enabled: !!userId,
   });
 
-  if (statsLoading) return <LoadingOverlay />;
+  if (profileLoading || statsLoading || readingLoading || wantLoading || scheduleLoading || finishedLoading) return <HomeSkeleton />;
 
   const greeting = getGreeting();
   const streakDays = stats?.streakDays ?? 0;
@@ -242,41 +242,64 @@ export default function Home() {
             </Pressable>
           )}
 
-          {/* Today's Pick (Next Read) */}
-          {nextRead ? (
-            <View className="bg-surface-container-low rounded-[24px] p-6 gap-6">
-              <View className="flex-row gap-6 items-start">
-                <View className="w-24 shrink-0 rounded-lg overflow-hidden" style={{ transform: [{ rotate: "-2deg" }] }}>
-                  {nextRead.books?.cover_url ? (
-                    <Image source={{ uri: nextRead.books.cover_url }} className="w-full aspect-[2/3]" resizeMode="cover" />
-                  ) : (
-                    <View className="w-full aspect-[2/3] bg-surface-variant items-center justify-center">
-                      <Text className="text-outline font-label-md">{nextRead.books?.title?.[0] ?? "?"}</Text>
-                    </View>
-                  )}
-                </View>
-                <View className="flex-1 gap-2">
-                  <View className="flex-row items-center gap-2">
-                    <Icon name="auto_awesome" size={16} color="#7d562d" filled />
-                    <Text className="text-secondary font-label-md">NEXT READ</Text>
-                  </View>
-                  <Text className="font-headline-md text-on-surface text-xl">
-                    {nextRead.books?.title ?? "Unknown"}
-                  </Text>
-                  <Text className="text-on-surface-variant font-body-md leading-relaxed">
-                    {nextRead.reason_text || (nextRead.books?.author ? `By ${nextRead.books.author}` : "Add to your queue to start reading.")}
-                  </Text>
-                  <Pressable
-                    onPress={() => router.push(`/reading-session?book_id=${nextRead.book_id}`)}
-                    className="flex-row items-center gap-2 pt-2"
-                  >
-                    <Text className="text-primary font-label-md">Start Reading</Text>
-                    <Icon name="arrow_forward" size={16} color="#52634c" />
-                  </Pressable>
-                </View>
+          {/* Want to Read Carousel */}
+          {wantToReadItems.length > 0 ? (
+            <View className="gap-4">
+              <View className="flex-row justify-between items-end px-1">
+                <Text className="font-headline-md text-on-surface">Want to Read</Text>
+                <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/library" as never)}>
+                  <Text className="text-on-surface-variant font-label-md">See All</Text>
+                  <Icon name="chevron_right" size={16} color="#444841" />
+                </Pressable>
               </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={{ gap: 16 }}
+              >
+                {wantToReadItems.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
+                    className="w-44 rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                  >
+                    <View className="w-full h-56 bg-surface-variant">
+                      {item.books?.cover_url ? (
+                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                      ) : (
+                        <View className="flex-1 items-center justify-center">
+                          <Icon name="auto_stories" size={36} color="#747870" />
+                        </View>
+                      )}
+                    </View>
+                    <View className="p-3 gap-1">
+                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
+                      {item.books?.author ? (
+                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{item.books.author}</Text>
+                      ) : null}
+                      <View className="flex-row items-center gap-1 pt-1">
+                        <Icon name="play_arrow" size={14} color="#52634c" filled />
+                        <Text className="font-label-md text-primary text-xs">Start Reading</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
-          ) : null}
+          ) : (
+            <Pressable
+              onPress={() => router.push("/discover" as never)}
+              className="rounded-[24px] bg-surface-container-low p-8 items-center gap-3 active:bg-surface-container"
+            >
+              <Icon name="auto_stories" size={40} color="#747870" />
+              <Text className="font-title-lg text-on-surface text-center">Your queue is empty</Text>
+              <Text className="font-body-md text-on-surface-variant text-center">
+                Discover books to add to your reading list.
+              </Text>
+              <Text className="text-primary font-label-md mt-2">Discover books</Text>
+            </Pressable>
+          )}
 
           {/* Recently Finished */}
           {finishedBooks && finishedBooks.length > 0 ? (

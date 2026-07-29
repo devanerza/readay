@@ -8,7 +8,7 @@ import { getReadingStats } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
 import TopAppBar from "../../components/TopAppBar";
 import StatTile from "../../components/StatTile";
-import LoadingOverlay from "../../components/LoadingOverlay";
+import { ProfileSkeleton } from "../../components/SkeletonScreens";
 import Icon, { type IconName } from "../../components/Icon";
 
 const QUOTES = [
@@ -80,7 +80,7 @@ export default function Profile() {
 
   const isLoading = profileLoading || statsLoading;
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading) return <ProfileSkeleton />;
 
   return (
     <View className="flex-1 bg-surface">

@@ -10,7 +10,7 @@ import { useAuthStore } from "../stores/auth-store";
 import Icon from "../components/Icon";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
-import LoadingOverlay from "../components/LoadingOverlay";
+import { SessionSkeleton } from "../components/SkeletonScreens";
 
 const QUICK_OPTIONS = [5, 10, 15, 20, 30, 45];
 
@@ -181,7 +181,7 @@ export default function ReadingSession() {
     );
   }
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading) return <SessionSkeleton />;
 
   return (
     <View className="flex-1 bg-surface" style={isPaused ? { opacity: 0.8 } : undefined}>

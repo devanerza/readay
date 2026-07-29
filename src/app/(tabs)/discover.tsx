@@ -8,6 +8,7 @@ import { getProfile } from "../../lib/profiles";
 import { searchBooks, getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
 import TopAppBar from "../../components/TopAppBar";
 import Icon from "../../components/Icon";
+import { SkeletonBlock } from "../../components/Skeleton";
 
 const GENRES = [
   { label: "All Curated" },
@@ -62,7 +63,7 @@ export default function Discover() {
     enabled: debouncedQuery.length >= 2,
   });
 
-  const { data: subjectResults } = useQuery({
+  const { data: subjectResults, isLoading: subjectLoading } = useQuery({
     queryKey: ["ol-subject", activeGenre],
     queryFn: () => getBooksBySubject(SUBJECT_MAP[activeGenre] ?? "fiction", 20),
     enabled: !debouncedQuery,
@@ -76,7 +77,7 @@ export default function Discover() {
 
   const topGenre = genreEntries[0]?.[0] ?? "fiction";
 
-  const { data: favoriteResults } = useQuery({
+  const { data: favoriteResults, isLoading: favoriteLoading } = useQuery({
     queryKey: ["ol-favorites", topGenre],
     queryFn: () => getBooksBySubject(topGenre, 20),
     enabled: !debouncedQuery && !!topGenre,
@@ -130,11 +131,29 @@ export default function Discover() {
           </ScrollView>
 
           {searching && debouncedQuery ? (
-            <Text className="font-body-md text-on-surface-variant text-center py-8">Searching...</Text>
+            <View className="flex-row flex-wrap gap-x-4 gap-y-6 pt-4">
+              {[1, 2, 3, 4].map((i) => (
+                <View key={i} className="w-[45%] gap-2">
+                  <SkeletonBlock className="w-full aspect-[2/3] rounded-lg" />
+                  <SkeletonBlock className="w-full h-4" />
+                  <SkeletonBlock className="w-2/3 h-3" />
+                </View>
+              ))}
+            </View>
           ) : displayDocs.length === 0 && !debouncedQuery ? (
             <>
               {/* Perfect for Tonight */}
-              {perfectDocs.length > 0 && (
+              {subjectLoading && (
+                <View className="gap-4">
+                  <SkeletonBlock className="w-48 h-7" />
+                  <View className="gap-4">
+                    {[1, 2].map((i) => (
+                      <SkeletonBlock key={i} className="w-full h-56 rounded-2xl" />
+                    ))}
+                  </View>
+                </View>
+              )}
+              {!subjectLoading && perfectDocs.length > 0 && (
                 <View className="gap-4">
                   <Text className="font-headline-lg-mobile text-on-surface">Perfect for Tonight</Text>
                   <View className="gap-4">
@@ -155,7 +174,21 @@ export default function Discover() {
               )}
 
               {/* Based on Your Favorites */}
-              {favoriteDocs.length > 0 && (
+              {favoriteLoading && (
+                <View className="gap-4">
+                  <SkeletonBlock className="w-52 h-7" />
+                  <View className="flex-row flex-wrap gap-x-4 gap-y-6">
+                    {[1, 2, 3, 4].map((i) => (
+                      <View key={i} className="w-[45%] gap-2">
+                        <SkeletonBlock className="w-full aspect-[2/3] rounded-lg" />
+                        <SkeletonBlock className="w-full h-4" />
+                        <SkeletonBlock className="w-2/3 h-3" />
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              {!favoriteLoading && favoriteDocs.length > 0 && (
                 <View className="gap-4">
                   <Text className="font-headline-lg-mobile text-on-surface">Based on Your Favorites</Text>
                   <View className="flex-row flex-wrap gap-x-4 gap-y-6">

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, ActivityIndicator, Alert, Image, Modal, FlatList } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Image, Modal, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { useAuthStore } from "../stores/auth-store";
 import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, type ScheduleBlockWithBook } from "../lib/schedule-blocks";
 import { getQueueItems, type QueueItemWithBook } from "../lib/queue-items";
 import Icon from "../components/Icon";
+import { ScheduleSkeleton } from "../components/SkeletonScreens";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -122,13 +123,7 @@ export default function Schedule() {
   const todayBlocks = blocks?.filter((b) => b.day_of_week === today) ?? [];
   const allBlocks = blocks?.slice().sort((a, b) => a.day_of_week - b.day_of_week) ?? [];
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-surface items-center justify-center">
-        <ActivityIndicator size="small" color="#52634c" />
-      </View>
-    );
-  }
+  if (isLoading) return <ScheduleSkeleton />;
 
   return (
     <View className="flex-1 bg-surface">
