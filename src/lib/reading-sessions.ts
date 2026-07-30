@@ -7,6 +7,7 @@ export type ReadingSession = {
   book_id: string;
   duration_seconds: number;
   pages_read: number;
+  target_minutes?: number;
   date: string;
   created_at: string;
 };
@@ -97,6 +98,7 @@ export async function createReadingSession(session: {
   book_id: string;
   duration_seconds: number;
   pages_read: number;
+  target_minutes?: number;
   date: string;
 }): Promise<string> {
   const id = generateId();
@@ -108,4 +110,50 @@ export async function createReadingSession(session: {
 export async function updateSessionPages(sessionId: string, pagesRead: number) {
   const { error } = await supabase.from('reading_sessions').update({ pages_read: pagesRead }).eq('id', sessionId);
   if (error) throw error;
+}
+
+export type TargetPerformance = {
+  averageSessionMinutes: number;
+  averageTargetMinutes: number;
+  metCount: number;
+  exceededCount: number;
+  fellShortCount: number;
+  totalWithTarget: number;
+};
+
+export async function getTargetPerformance(userId: string): Promise<TargetPerformance> {
+  const { data } = await supabase
+    .from('reading_sessions')
+    .select('duration_seconds, target_minutes')
+    .eq('user_id', userId)
+    .not('target_minutes', 'is', null);
+
+  if (!data || data.length === 0) {
+    return { averageSessionMinutes: 0, averageTargetMinutes: 0, metCount: 0, exceededCount: 0, fellShortCount: 0, totalWithTarget: 0 };
+  }
+
+  let totalSession = 0;
+  let totalTarget = 0;
+  let met = 0;
+  let exceeded = 0;
+  let fellShort = 0;
+
+  for (const s of data) {
+    const actual = s.duration_seconds / 60;
+    const target = s.target_minutes!;
+    totalSession += actual;
+    totalTarget += target;
+    if (actual >= target + 1) exceeded++;
+    else if (actual >= target - 1) met++;
+    else fellShort++;
+  }
+
+  return {
+    averageSessionMinutes: Math.round(totalSession / data.length),
+    averageTargetMinutes: Math.round(totalTarget / data.length),
+    metCount: met,
+    exceededCount: exceeded,
+    fellShortCount: fellShort,
+    totalWithTarget: data.length,
+  };
 }

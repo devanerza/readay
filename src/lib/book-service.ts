@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import {
   getBookDetails,
+  getWorkPageCount,
   buildCoverUrl,
   type OLSearchResult,
 } from './open-library';
@@ -17,6 +18,7 @@ export async function cacheBookFromSearch(doc: OLSearchResult): Promise<string> 
       genres: doc.subject ?? [],
       isbn: doc.isbn?.[0] ?? '',
       published_date: doc.first_publish_year?.toString() ?? '',
+      page_count: doc.number_of_pages_median ?? null,
     }, { onConflict: 'open_library_id' })
     .select('id')
     .single();
@@ -27,6 +29,7 @@ export async function cacheBookFromSearch(doc: OLSearchResult): Promise<string> 
 
 export async function cacheBookFromDetail(olId: string): Promise<string> {
   const detail = await getBookDetails(olId);
+  const pageCount = await getWorkPageCount(olId);
   const { data, error } = await supabase
     .from('books')
     .upsert({
@@ -36,6 +39,7 @@ export async function cacheBookFromDetail(olId: string): Promise<string> {
       genres: detail.subjects ?? [],
       description: typeof detail.description === 'string' ? detail.description : detail.description?.value ?? '',
       published_date: detail.first_publish_date ?? '',
+      page_count: pageCount,
     }, { onConflict: 'open_library_id' })
     .select('id')
     .single();

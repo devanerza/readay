@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getProfile } from "../../lib/profiles";
-import { getReadingStats, getWeeklySessionDays } from "../../lib/reading-sessions";
+import { getReadingStats, getWeeklySessionDays, getTargetPerformance } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
 import { generateWeeklyInsight } from "../../lib/weekly-coach";
 import TopAppBar from "../../components/TopAppBar";
@@ -55,6 +55,12 @@ export default function Journey() {
   const { data: finishedBooks } = useQuery({
     queryKey: ["finished-books", userId],
     queryFn: () => getQueueItems(userId!, 'finished'),
+    enabled: !!userId,
+  });
+
+  const { data: targetPerf } = useQuery({
+    queryKey: ["target-performance", userId],
+    queryFn: () => getTargetPerformance(userId!),
     enabled: !!userId,
   });
 
@@ -144,6 +150,38 @@ export default function Journey() {
               }
             </View>
           </View>
+
+          {/* Target Performance */}
+          {targetPerf && targetPerf.totalWithTarget > 0 ? (
+            <View className="gap-4">
+              <Text className="font-title-lg text-on-surface">Target Performance</Text>
+              <View className="bg-surface-container-low rounded-2xl p-5 gap-4">
+                <View className="flex-row justify-between items-center">
+                  <Text className="font-body-md text-on-surface-variant">Average session</Text>
+                  <Text className="font-title-lg text-on-surface">{targetPerf.averageSessionMinutes} min</Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="font-body-md text-on-surface-variant">Average target</Text>
+                  <Text className="font-title-lg text-on-surface">{targetPerf.averageTargetMinutes} min</Text>
+                </View>
+                <View className="h-px bg-surface-variant" />
+                <View className="flex-row justify-around">
+                  <View className="items-center gap-1">
+                    <Text className="font-display text-headline-md text-secondary">{targetPerf.exceededCount}</Text>
+                    <Text className="text-caption text-on-surface-variant">Exceeded</Text>
+                  </View>
+                  <View className="items-center gap-1">
+                    <Text className="font-display text-headline-md text-primary">{targetPerf.metCount}</Text>
+                    <Text className="text-caption text-on-surface-variant">Met</Text>
+                  </View>
+                  <View className="items-center gap-1">
+                    <Text className="font-display text-headline-md text-outline">{targetPerf.fellShortCount}</Text>
+                    <Text className="text-caption text-on-surface-variant">Fell short</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          ) : null}
 
           {/* Monthly Highlights */}
           <View className="gap-4">

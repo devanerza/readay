@@ -2,16 +2,17 @@ import React from "react";
 import { View, Text, ScrollView, Image, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth-store";
 import { getBook, getBookByOlId } from "../lib/books";
-import { getBookDetails, buildCoverUrl } from "../lib/open-library";
+import { getBookDetails, buildCoverUrl, getWorkPageCount } from "../lib/open-library";
 import { cacheBookFromDetail } from "../lib/book-service";
 import { addToQueue, getCurrentPage } from "../lib/queue-items";
 import { getReadingStats } from "../lib/reading-sessions";
+import { supabase } from "../lib/supabase";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
-import LoadingOverlay from "../components/LoadingOverlay";
+import { BookDetailSkeleton } from "../components/SkeletonScreens";
 import Icon from "../components/Icon";
 
 export default function BookDetail() {
@@ -19,6 +20,7 @@ export default function BookDetail() {
   const { book_id, open_library_id } = useLocalSearchParams<{ book_id?: string; open_library_id?: string }>();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
+  const queryClient = useQueryClient();
   const [adding, setAdding] = React.useState(false);
 
   const { data: localBook, isLoading: localLoading } = useQuery({
@@ -36,7 +38,21 @@ export default function BookDetail() {
   });
 
   const localBookId = book_id || localBook?.id;
-  const pageCount = localBook?.page_count ?? 0;
+  const cachedPageCount = localBook?.page_count ?? 0;
+
+  const { data: olPageCount } = useQuery({
+    queryKey: ["ol-page-count", olId],
+    queryFn: async () => {
+      const count = await getWorkPageCount(olId!);
+      if (count && localBook?.id) {
+        await supabase.from('books').update({ page_count: count }).eq('id', localBook.id);
+      }
+      return count;
+    },
+    enabled: !!olId && cachedPageCount === 0,
+  });
+
+  const pageCount = cachedPageCount || olPageCount || 0;
 
   const { data: currentPage = 0 } = useQuery({
     queryKey: ["current-page", localBookId, userId],
@@ -55,13 +71,13 @@ export default function BookDetail() {
   const genreTags = detail?.subjects?.slice(0, 3) ?? [];
   const progressPct = pageCount > 0 ? Math.min((currentPage / pageCount) * 100, 100) : 0;
 
-  const handleStartReading = async () => {
+  const handleAddToLibrary = async () => {
     if (!userId || !olId) return;
     setAdding(true);
     try {
       const bookId = await cacheBookFromDetail(olId);
       await addToQueue({ user_id: userId, book_id: bookId });
-      router.push(`/reading-session?book_id=${bookId}`);
+      Alert.alert("Added", `${detail?.title ?? "Book"} added to your library.`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : typeof e === 'object' && e ? (e as any).message ?? JSON.stringify(e) : String(e);
       Alert.alert("Error", `Could not add: ${msg}`);
@@ -70,22 +86,7 @@ export default function BookDetail() {
     }
   };
 
-  const handleAddToQueue = async () => {
-    if (!userId || !olId) return;
-    setAdding(true);
-    try {
-      const bookId = await cacheBookFromDetail(olId);
-      await addToQueue({ user_id: userId, book_id: bookId });
-      Alert.alert("Added", `${detail?.title ?? "Book"} added to your queue.`);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : typeof e === 'object' && e ? (e as any).message ?? JSON.stringify(e) : String(e);
-      Alert.alert("Error", `Could not add: ${msg}`);
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  if (olLoading || localLoading) return <LoadingOverlay />;
+  if (olLoading || localLoading) return <BookDetailSkeleton />;
 
   return (
     <View className="flex-1 bg-background">
@@ -149,19 +150,12 @@ export default function BookDetail() {
 
               {/* CTA */}
               <Pressable
-                onPress={handleStartReading}
+                onPress={handleAddToLibrary}
                 disabled={adding}
                 className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95 disabled:opacity-50"
               >
-                <Icon name="play_arrow" size={20} color="#ffffff" filled />
-                <Text className="text-white font-label-md">{adding ? "Adding..." : "Start Reading"}</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleAddToQueue}
-                disabled={adding}
-                className="w-full py-3 mt-3 items-center active:opacity-70"
-              >
-                <Text className="font-label-md text-primary">Add to Queue</Text>
+                <Icon name={adding ? "check" : "book_2"} size={20} color="#ffffff" filled />
+                <Text className="text-white font-label-md">{adding ? "Adding..." : "Add to Library"}</Text>
               </Pressable>
             </View>
           </View>

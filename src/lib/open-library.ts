@@ -8,6 +8,7 @@ export type OLSearchResult = {
   first_publish_year?: number;
   isbn?: string[];
   subject?: string[];
+  number_of_pages_median?: number;
 };
 
 export type OLSearchResponse = {
@@ -22,6 +23,15 @@ export type OLWorkDetail = {
   authors?: { author: { key: string } }[];
   covers?: number[];
   first_publish_date?: string;
+};
+
+export type OLEdition = {
+  number_of_pages?: number;
+  title?: string;
+};
+
+export type OLEditionsResponse = {
+  entries: OLEdition[];
 };
 
 async function fetchJSON<T>(url: string): Promise<T> {
@@ -55,4 +65,15 @@ export async function getBooksBySubject(subject: string, limit = 20): Promise<OL
 
 export function extractOpenLibraryId(key: string): string {
   return key.replace('/works/', '');
+}
+
+export async function getWorkPageCount(olKey: string): Promise<number | null> {
+  const key = olKey.startsWith('/works/') ? olKey : `/works/${olKey}`;
+  try {
+    const data = await fetchJSON<OLEditionsResponse>(`${OPEN_LIBRARY_BASE}${key}/editions.json?limit=10`);
+    for (const entry of data.entries ?? []) {
+      if (entry.number_of_pages) return entry.number_of_pages;
+    }
+  } catch {}
+  return null;
 }
