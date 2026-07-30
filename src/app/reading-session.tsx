@@ -12,27 +12,24 @@ import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
 import { SessionSkeleton } from "../components/SkeletonScreens";
 
-const QUICK_OPTIONS = [5, 10, 15, 20, 30, 45];
-
 export default function ReadingSession() {
   const router = useRouter();
-  const { book_id } = useLocalSearchParams<{ book_id?: string }>();
+  const { book_id, target_minutes: targetParam } = useLocalSearchParams<{ book_id?: string; target_minutes?: string }>();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
   const queryClient = useQueryClient();
-  const [phase, setPhase] = useState<"duration" | "reading">("duration");
-  const [totalSeconds, setTotalSeconds] = useState(0);
+  const targetMinutes = targetParam ? parseInt(targetParam, 10) : null;
   const [seconds, setSeconds] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const [showPageInput, setShowPageInput] = useState(false);
   const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
-  const [customMin, setCustomMin] = useState("20");
   const [pageInput, setPageInput] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const endedRef = useRef(false);
   const endSessionRef = useRef<() => void>(() => {});
-  const elapsedRef = useRef(0);
+  const [targetReached, setTargetReached] = useState(false);
 
   const { data: book, isLoading } = useQuery({
     queryKey: ["session-book", book_id],
@@ -46,52 +43,43 @@ export default function ReadingSession() {
     enabled: !!book_id && !!userId && book_id !== 'unknown',
   });
 
-  const elapsedSeconds = totalSeconds - seconds;
-  elapsedRef.current = elapsedSeconds;
-
-  const startSession = (minutes: number) => {
-    const total = minutes * 60;
-    setTotalSeconds(total);
-    setSeconds(total);
-    setIsPaused(false);
-    setPhase("reading");
-    endedRef.current = false;
-  };
+  const elapsedSeconds = seconds;
+  const targetSeconds = targetMinutes ? targetMinutes * 60 : null;
 
   useEffect(() => {
-    if (phase !== "reading") return;
     intervalRef.current = setInterval(() => {
       setSeconds((s) => {
-        if (isPaused || s <= 0) return s;
-        const next = s - 1;
-        if (next <= 0 && !endedRef.current) {
-          endedRef.current = true;
-          endSessionRef.current();
-        }
-        return next;
+        if (isPaused) return s;
+        return s + 1;
       });
     }, 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [phase, isPaused]);
+  }, [isPaused]);
+
+  useEffect(() => {
+    if (targetSeconds && elapsedSeconds >= targetSeconds && !targetReached) {
+      setTargetReached(true);
+    }
+  }, [elapsedSeconds, targetSeconds, targetReached]);
 
   const handleEndSession = async () => {
     if (!userId) return;
-    if (elapsedRef.current < 10) { router.back(); return; }
+    if (elapsedSeconds < 10) { router.back(); return; }
 
     setSaving(true);
     try {
       const id = await createReadingSession({
         user_id: userId,
         book_id: book_id ?? 'unknown',
-        duration_seconds: elapsedRef.current,
+        duration_seconds: elapsedSeconds,
+        target_minutes: targetMinutes ?? undefined,
         pages_read: 0,
         date: new Date().toISOString(),
       });
       setSavedSessionId(id);
-      setPageInput(currentPage > 0 ? String(currentPage) : "");
-      setShowPageInput(true);
+      setShowSummary(true);
     } catch (e) {
       Alert.alert("Error", e instanceof Error ? e.message : String(e));
       router.back();
@@ -101,6 +89,12 @@ export default function ReadingSession() {
   };
 
   endSessionRef.current = handleEndSession;
+
+  const handleSummaryDone = () => {
+    setShowSummary(false);
+    setPageInput(currentPage > 0 ? String(currentPage) : "");
+    setShowPageInput(true);
+  };
 
   const handleSavePage = async () => {
     const page = parseInt(pageInput, 10);
@@ -122,63 +116,18 @@ export default function ReadingSession() {
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
   const timeLabel = `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  const progressPct = totalSeconds > 0 ? (seconds / totalSeconds) * 100 : 0;
+  const progressPct = targetSeconds ? Math.min((elapsedSeconds / targetSeconds) * 100, 100) : null;
 
-  if (phase === "duration") {
-    return (
-      <View className="flex-1 bg-surface">
-        <SafeAreaView edges={["top"]} className="flex-1">
-          <TopAppBar onBack={() => router.back()} />
-          <View className="flex-1 items-center justify-center px-margin-page gap-8">
-            <View className="items-center gap-3">
-              <View className="p-4 bg-primary/10 rounded-3xl">
-                <Icon name="timer" size={36} color="#52634c" />
-              </View>
-              <Text className="font-display text-headline-md text-on-surface text-center">
-                How long will{'\n'}you read?
-              </Text>
-            </View>
-
-            <View className="flex-row flex-wrap justify-center gap-3">
-              {QUICK_OPTIONS.map((m) => (
-                <Pressable
-                  key={m}
-                  onPress={() => startSession(m)}
-                  className="px-6 py-3.5 rounded-full bg-primary-container/20 active:bg-primary-container/40"
-                >
-                  <Text className="font-label-lg text-primary">{m} min</Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <View className="items-center gap-4">
-              <Text className="font-body-md text-on-surface-variant">or set custom</Text>
-              <View className="flex-row items-center gap-3">
-                <View className="bg-surface-container-low rounded-xl px-4 py-2.5 w-20">
-                  <TextInput
-                    className="font-display text-headline-md text-on-surface text-center"
-                    value={customMin}
-                    onChangeText={(v) => setCustomMin(v.replace(/\D/g, "").slice(0, 3))}
-                    keyboardType="number-pad"
-                    maxLength={3}
-                  />
-                </View>
-                <Text className="font-body-lg text-on-surface-variant">min</Text>
-              </View>
-              <Pressable
-                onPress={() => {
-                  const m = parseInt(customMin, 10);
-                  if (m > 0) startSession(m);
-                }}
-                className="px-10 py-3.5 rounded-full bg-primary active:opacity-90"
-              >
-                <Text className="text-on-primary font-label-lg">Start Reading</Text>
-              </Pressable>
-            </View>
-          </View>
-        </SafeAreaView>
-      </View>
-    );
+  const summaryDiff = targetMinutes ? elapsedSeconds / 60 - targetMinutes : 0;
+  let summaryResult: string;
+  if (!targetMinutes) {
+    summaryResult = `Read for ${mins} min`;
+  } else if (summaryDiff >= 1) {
+    summaryResult = `Exceeded by ${Math.round(summaryDiff)} min`;
+  } else if (summaryDiff >= -1) {
+    summaryResult = "Met your target";
+  } else {
+    summaryResult = `Fell short by ${Math.round(Math.abs(summaryDiff))} min`;
   }
 
   if (isLoading) return <SessionSkeleton />;
@@ -204,15 +153,28 @@ export default function ReadingSession() {
             <Text className="font-body-md text-on-surface-variant italic mb-8">{book.author}</Text>
           ) : null}
 
+          {/* Target badge */}
+          {targetMinutes ? (
+            <View className="flex-row items-center gap-2 mb-2">
+              <View className={`px-3 py-1 rounded-full ${targetReached ? "bg-primary/20" : "bg-surface-variant"}`}>
+                <Text className={`font-label-md text-xs ${targetReached ? "text-primary" : "text-on-surface-variant"}`}>
+                  {targetReached ? "Target reached!" : `Target: ${targetMinutes} min`}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
           <View className="items-center gap-2 mb-10">
             <View className="flex-row items-center gap-3">
               <Icon name="timer" size={22} color="#52634c" filled />
               <Text className="font-display text-headline-lg-mobile text-primary tracking-widest">{timeLabel}</Text>
             </View>
-            <Text className="font-label-md text-on-surface-variant uppercase tracking-tighter">remaining</Text>
-            <View className="w-48 mt-2">
-              <ProgressBar progress={progressPct} />
-            </View>
+            <Text className="font-label-md text-on-surface-variant uppercase tracking-tighter">elapsed</Text>
+            {progressPct !== null ? (
+              <View className="w-48 mt-2">
+                <ProgressBar progress={progressPct} />
+              </View>
+            ) : null}
           </View>
 
           <View className="flex-row items-center gap-8">
@@ -233,6 +195,52 @@ export default function ReadingSession() {
           </View>
         </View>
       </SafeAreaView>
+
+      {/* Summary Modal */}
+      <Modal visible={showSummary} animationType="slide" transparent>
+        <View className="flex-1 bg-black/40">
+          <View className="flex-1 justify-end">
+            <View className="bg-surface rounded-t-3xl p-8 pb-12 gap-8">
+              <View className="items-center gap-4">
+                <View className="p-4 bg-primary/10 rounded-3xl">
+                  <Icon name="check_circle" size={36} color="#52634c" filled />
+                </View>
+                <Text className="font-display text-headline-md text-on-surface text-center">Session Complete</Text>
+              </View>
+
+              <View className="bg-surface-container-low rounded-2xl p-5 gap-3">
+                <View className="flex-row justify-between items-center">
+                  <Text className="font-body-md text-on-surface-variant">Time read</Text>
+                  <Text className="font-title-lg text-on-surface">{mins} min {secs} sec</Text>
+                </View>
+                {targetMinutes ? (
+                  <>
+                    <View className="h-px bg-surface-variant" />
+                    <View className="flex-row justify-between items-center">
+                      <Text className="font-body-md text-on-surface-variant">Target</Text>
+                      <Text className="font-title-lg text-on-surface">{targetMinutes} min</Text>
+                    </View>
+                    <View className="h-px bg-surface-variant" />
+                    <View className="flex-row justify-between items-center">
+                      <Text className="font-body-md text-on-surface-variant">Result</Text>
+                      <Text className={`font-title-lg ${summaryDiff >= 0 ? "text-primary" : "text-secondary"}`}>
+                        {summaryResult}
+                      </Text>
+                    </View>
+                  </>
+                ) : null}
+              </View>
+
+              <Pressable
+                onPress={handleSummaryDone}
+                className="w-full py-4 bg-primary rounded-full items-center active:opacity-90"
+              >
+                <Text className="text-on-primary font-label-lg">Continue</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Page Input Modal */}
       <Modal visible={showPageInput} animationType="slide" transparent>
