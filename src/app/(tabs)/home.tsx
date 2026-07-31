@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, ImageBackground } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -91,6 +91,14 @@ export default function Home() {
     return null;
   })();
 
+  const nextBlockDuration = nextBlock ? (() => {
+    const [sh, sm] = nextBlock.start_time.split(":").map(Number);
+    const [eh, em] = nextBlock.end_time.split(":").map(Number);
+    let diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff <= 0) diff += 24 * 60;
+    return diff;
+  })() : 0;
+
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
@@ -108,7 +116,7 @@ export default function Home() {
           {/* Friendly Greeting */}
           <View className="mt-2">
             <Text className="font-display text-[40px] leading-[46px] text-on-surface">
-              {greeting}, <Text className="italic font-normal">{profile?.display_name ?? "Reader"}</Text>
+              {greeting}, <Text className="font-display">{profile?.display_name ?? "Reader"}</Text>
             </Text>
             <Text className="text-on-surface-variant mt-2 font-body-lg">
               {greetingSubtitle}
@@ -117,60 +125,113 @@ export default function Home() {
 
           {/* Upcoming Session */}
           {scheduleBlocks.length > 0 && nextBlock ? (
-            <View className="bg-primary rounded-[24px] p-6 gap-5">
-              <View className="flex-row items-start gap-5">
-                <View className={`${nextBlock.books ? "w-24 shrink-0 rounded-lg overflow-hidden" : "p-2 bg-white/20 rounded-xl self-start"}`}>
+            <>
+              <Pressable onPress={() => router.push("/schedule" as never)} className="flex-row items-center justify-between">
+                <Text className="font-headline-lg-mobile text-on-surface">Reading Session</Text>
+                <View className="flex-row items-center gap-1">
+                  <Text className="text-primary font-label-md">Manage Schedule</Text>
+                  <Icon name="chevron_right" size={18} color="#52634c" />
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push(nextBlock.books ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}` : "/reading-session")}
+              >
+                <View className="rounded-[24px] overflow-hidden">
                   {nextBlock.books?.cover_url ? (
-                    <Image source={{ uri: nextBlock.books.cover_url }} className="w-full aspect-[2/3]" resizeMode="cover" style={{ transform: [{ rotate: "-2deg" }] }} />
+                    <ImageBackground source={{ uri: nextBlock.books.cover_url }} className="w-full h-[420px]">
+                      <View className="flex-1 relative">
+                        <View className="absolute inset-0 bg-black/50" />
+                        <View className="flex-1 justify-between p-6">
+                          <View className="gap-1">
+                            <View className="flex-row items-center gap-2">
+                              <View className="p-1.5 bg-white/20 rounded-lg">
+                                <Icon name="schedule" size={14} color="#ffffff" />
+                              </View>
+                              <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming Session</Text>
+                            </View>
+                            <View className="gap-0.5">
+                              {nextBlock.books ? (
+                                <Text className="font-display text-[18px] leading-[22px] text-white" numberOfLines={1}>{nextBlock.books.title}</Text>
+                              ) : null}
+                              {nextBlock.books?.author ? (
+                                <Text className="text-white/70 text-[15px] text-caption">{nextBlock.books.author}</Text>
+                              ) : null}
+                            </View>
+                          </View>
+                          <View className="gap-3">
+                            <Text className="text-white/90 font-body-md">
+                              {(() => {
+                                const now = new Date();
+                                const today = now.getDay();
+                                const [h, m] = nextBlock.start_time.split(":").map(Number);
+
+                                if (nextBlock.day_of_week === today) {
+                                  const blockTime = new Date(); blockTime.setHours(h, m, 0);
+                                  const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
+                                  if (diff > 0) return `${nextBlock.start_time.slice(0, 5)} — in ${diff} min`;
+                                  return `Scheduled for ${nextBlock.start_time.slice(0, 5)}`;
+                                }
+                                const daysFromNow = (nextBlock.day_of_week + 7 - today) % 7;
+                                if (daysFromNow === 1) return `Tomorrow at ${nextBlock.start_time.slice(0, 5)}`;
+                                return `${DAY_NAMES[nextBlock.day_of_week]} at ${nextBlock.start_time.slice(0, 5)}`;
+                              })()}
+                            </Text>
+                            <View className="flex-row items-center gap-2">
+                              <View className="bg-white py-2.5 px-6 rounded-full flex-row items-center gap-2">
+                                <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
+                                <Icon name="arrow_forward" size={18} color="#52634c" />
+                              </View>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </ImageBackground>
                   ) : (
-                    <Icon name="schedule" size={22} color="#ffffff" />
+                    <View className="bg-primary rounded-[24px] h-96">
+                      <View className="flex-1 justify-between p-6">
+                        <View className="gap-1">
+                          <View className="flex-row items-center gap-2">
+                            <View className="p-1.5 bg-white/20 rounded-lg">
+                              <Icon name="schedule" size={14} color="#ffffff" />
+                            </View>
+                            <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming</Text>
+                          </View>
+                          <Text className="font-display text-[18px] leading-[22px] text-white mt-1">{nextBlock.label || "Reading Session"}</Text>
+                          {nextBlock.books ? (
+                            <Text className="text-white/70 font-body-md" numberOfLines={1}>{nextBlock.books.title}</Text>
+                          ) : null}
+                        </View>
+                        <View className="gap-3">
+                          <Text className="text-white/90 font-body-md">
+                            {(() => {
+                              const now = new Date();
+                              const today = now.getDay();
+                              const [h, m] = nextBlock.start_time.split(":").map(Number);
+
+                              if (nextBlock.day_of_week === today) {
+                                const blockTime = new Date(); blockTime.setHours(h, m, 0);
+                                const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
+                                if (diff > 0) return `${nextBlock.start_time.slice(0, 5)} — in ${diff} min`;
+                                return `Scheduled for ${nextBlock.start_time.slice(0, 5)}`;
+                              }
+                              const daysFromNow = (nextBlock.day_of_week + 7 - today) % 7;
+                              if (daysFromNow === 1) return `Tomorrow at ${nextBlock.start_time.slice(0, 5)}`;
+                              return `${DAY_NAMES[nextBlock.day_of_week]} at ${nextBlock.start_time.slice(0, 5)}`;
+                            })()}
+                          </Text>
+                          <View className="flex-row items-center gap-2">
+                            <View className="bg-white py-2.5 px-6 rounded-full flex-row items-center gap-2">
+                              <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
+                              <Icon name="arrow_forward" size={18} color="#52634c" />
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
                   )}
                 </View>
-                <View className="flex-1 gap-2 pt-1">
-                  <View className="flex-row items-center gap-2">
-                    <View className="p-1.5 bg-white/20 rounded-lg">
-                      <Icon name="schedule" size={14} color="#ffffff" />
-                    </View>
-                    <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming</Text>
-                  </View>
-                  <View className="gap-0.5">
-                    <Text className="font-display text-[18px] leading-[22px] text-white">{nextBlock.label || "Reading Session"}</Text>
-                    {nextBlock.books ? (
-                      <Text className="text-white/70 font-body-md" numberOfLines={1}>{nextBlock.books.title}</Text>
-                    ) : null}
-                    {nextBlock.books?.author ? (
-                      <Text className="text-white/50 text-caption">{nextBlock.books.author}</Text>
-                    ) : null}
-                  </View>
-                  <Text className="text-white/80 font-body-md">
-                    {(() => {
-                      const now = new Date();
-                      const today = now.getDay();
-                      const [h, m] = nextBlock.start_time.split(":").map(Number);
-
-                      if (nextBlock.day_of_week === today) {
-                        const blockTime = new Date(); blockTime.setHours(h, m, 0);
-                        const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
-                        if (diff > 0) return `${nextBlock.start_time.slice(0, 5)} — in ${diff} min`;
-                        return `Scheduled for ${nextBlock.start_time.slice(0, 5)}`;
-                      }
-                      const daysFromNow = (nextBlock.day_of_week + 7 - today) % 7;
-                      if (daysFromNow === 1) return `Tomorrow at ${nextBlock.start_time.slice(0, 5)}`;
-                      return `${DAY_NAMES[nextBlock.day_of_week]} at ${nextBlock.start_time.slice(0, 5)}`;
-                    })()}
-                  </Text>
-                  <Pressable
-                    onPress={() => router.push(nextBlock.books ? `/reading-session?book_id=${nextBlock.books.id}` : "/reading-session")}
-                    className="self-start mt-1 bg-white py-2.5 px-6 rounded-full active:opacity-90"
-                  >
-                    <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
-                  </Pressable>
-                </View>
-              </View>
-              <Pressable onPress={() => router.push("/schedule" as never)} className="items-center">
-                <Text className="text-white/60 font-label-md text-xs">Manage Schedule</Text>
               </Pressable>
-            </View>
+            </>
           ) : (
             <Pressable
               onPress={() => router.push("/schedule" as never)}
