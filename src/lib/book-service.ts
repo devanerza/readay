@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import {
   getBookDetails,
+  getAuthorNames,
   getWorkPageCount,
   buildCoverUrl,
   type OLSearchResult,
@@ -29,12 +30,16 @@ export async function cacheBookFromSearch(doc: OLSearchResult): Promise<string> 
 
 export async function cacheBookFromDetail(olId: string): Promise<string> {
   const detail = await getBookDetails(olId);
-  const pageCount = await getWorkPageCount(olId);
+  const [authorNames, pageCount] = await Promise.all([
+    getAuthorNames(detail.authors),
+    getWorkPageCount(olId),
+  ]);
   const { data, error } = await supabase
     .from('books')
     .upsert({
       open_library_id: olId,
       title: detail.title ?? 'Unknown',
+      author: authorNames[0] ?? null,
       cover_url: detail.covers?.[0] ? buildCoverUrl(detail.covers[0]) : null,
       genres: detail.subjects ?? [],
       description: typeof detail.description === 'string' ? detail.description : detail.description?.value ?? '',

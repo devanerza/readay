@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth-store";
 import { getBook, getBookByOlId } from "../lib/books";
-import { getBookDetails, buildCoverUrl, getWorkPageCount } from "../lib/open-library";
+import { getBookDetails, buildCoverUrl, getWorkPageCount, getAuthorNames } from "../lib/open-library";
 import { cacheBookFromDetail } from "../lib/book-service";
 import { addToQueue, getCurrentPage } from "../lib/queue-items";
 import { getReadingStats } from "../lib/reading-sessions";
@@ -53,6 +53,21 @@ export default function BookDetail() {
   });
 
   const pageCount = cachedPageCount || olPageCount || 0;
+
+  const { data: olAuthor } = useQuery({
+    queryKey: ["ol-author", olId],
+    queryFn: async () => {
+      const names = await getAuthorNames(detail?.authors);
+      const name = names[0] ?? null;
+      if (name && localBook?.id && !localBook.author) {
+        await supabase.from('books').update({ author: name }).eq('id', localBook.id);
+      }
+      return name;
+    },
+    enabled: !!olId && !!detail && !localBook?.author,
+  });
+
+  const displayAuthor = localBook?.author ?? olAuthor ?? null;
 
   const { data: currentPage = 0 } = useQuery({
     queryKey: ["current-page", localBookId, userId],
@@ -127,6 +142,9 @@ export default function BookDetail() {
                 </View>
               )}
               <Text className="font-headline-lg-mobile text-on-surface text-center mb-1">{detail?.title ?? "Unknown Book"}</Text>
+              {displayAuthor ? (
+                <Text className="font-body-md text-on-surface-variant italic mb-4">{displayAuthor}</Text>
+              ) : null}
 
               {/* Stats */}
               <View className="flex-row gap-4 w-full mb-6">

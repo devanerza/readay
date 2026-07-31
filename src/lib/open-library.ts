@@ -56,6 +56,18 @@ export async function getBookDetails(olKey: string): Promise<OLWorkDetail> {
   return fetchJSON<OLWorkDetail>(`${OPEN_LIBRARY_BASE}${key}.json`);
 }
 
+export async function getAuthorNames(authors?: { author: { key: string } }[]): Promise<string[]> {
+  if (!authors || authors.length === 0) return [];
+  const names: string[] = [];
+  for (const a of authors.slice(0, 3)) {
+    try {
+      const data = await fetchJSON<{ name?: string }>(`${OPEN_LIBRARY_BASE}${a.author.key}.json`);
+      if (data.name) names.push(data.name);
+    } catch {}
+  }
+  return names;
+}
+
 export async function getBooksBySubject(subject: string, limit = 20): Promise<OLSearchResult[]> {
   const data = await fetchJSON<OLSearchResponse>(
     `${OPEN_LIBRARY_BASE}/search.json?q=subject:${encodeURIComponent(subject)}&limit=${limit}&sort=rating`
