@@ -264,9 +264,9 @@ export default function Home() {
                   <Pressable
                     key={item.id}
                     onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
-                    className="w-44 rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
-                    <View className="w-full h-56 bg-surface-variant">
+                    <View className="w-full h-[350px] bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
                       ) : (
@@ -323,9 +323,9 @@ export default function Home() {
                   <Pressable
                     key={item.id}
                     onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
-                    className="w-44 rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[220] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
-                    <View className="w-full h-56 bg-surface-variant">
+                    <View className="w-full h-[350] bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
                       ) : (
