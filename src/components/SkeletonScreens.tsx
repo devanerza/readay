@@ -95,20 +95,50 @@ export function LibrarySkeleton() {
   );
 }
 
-export function JourneySkeleton() {
+export function ProfileSkeleton() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar title="ReadFlow" rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
         <ScrollView
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="gap-3 mt-2">
-            <SkeletonBlock className="w-24 h-4" />
-            <SkeletonBlock className="w-full h-10" />
-            <SkeletonBlock className="w-3/4 h-5" />
+          <View className="items-center mt-8 gap-4 px-4">
+            <SkeletonBlock className="w-4/5 h-7 rounded-sm" />
+            <View className="flex-row items-center gap-2">
+              <View className="h-px w-6 bg-outline/30" />
+              <SkeletonBlock className="w-32 h-6" />
+              <View className="h-px w-6 bg-outline/30" />
+            </View>
+            <SkeletonBlock className="w-36 h-5" />
+          </View>
+          <View className="bg-surface-container-low rounded-xl p-6 items-center gap-2">
+            <SkeletonBlock className="w-20 h-3" />
+            <SkeletonBlock className="w-48 h-8" />
+            <SkeletonBlock className="w-full max-w-xs h-1" />
+            <SkeletonBlock className="w-32 h-3" />
+          </View>
+          <View className="gap-4">
+            <SkeletonBlock className="w-36 h-6" />
+            <View className="flex-row gap-4">
+              {[1, 2].map((i) => (
+                <View key={i} className="flex-1 bg-surface-container-low rounded-xl p-5 gap-3 items-center">
+                  <SkeletonBlock className="w-10 h-10 rounded-full" />
+                  <SkeletonBlock className="w-16 h-7" />
+                  <SkeletonBlock className="w-20 h-3" />
+                </View>
+              ))}
+            </View>
+          </View>
+          <View className="gap-4">
+            <SkeletonBlock className="w-32 h-6" />
+            <View className="flex-row flex-wrap gap-2">
+              {[1, 2, 3].map((i) => (
+                <SkeletonBlock key={i} className="w-24 h-8 rounded-full" />
+              ))}
+            </View>
           </View>
           <View className="p-6 bg-surface-container-low rounded-[32px] gap-6">
             <View className="flex-row justify-between">
@@ -156,57 +186,6 @@ export function JourneySkeleton() {
                   <SkeletonBlock className="w-10 h-10 rounded-full" />
                   <SkeletonBlock className="flex-1 h-10" />
                 </View>
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
-  );
-}
-
-export function ProfileSkeleton() {
-  return (
-    <View className="flex-1 bg-surface">
-      <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
-        <ScrollView
-          className="flex-1 px-margin-page"
-          contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="items-center mt-8 gap-4 px-4">
-            <SkeletonBlock className="w-4/5 h-7 rounded-sm" />
-            <View className="flex-row items-center gap-2">
-              <View className="h-px w-6 bg-outline/30" />
-              <SkeletonBlock className="w-32 h-6" />
-              <View className="h-px w-6 bg-outline/30" />
-            </View>
-            <SkeletonBlock className="w-36 h-5" />
-          </View>
-          <View className="bg-surface-container-low rounded-xl p-6 items-center gap-2">
-            <SkeletonBlock className="w-20 h-3" />
-            <SkeletonBlock className="w-48 h-8" />
-            <SkeletonBlock className="w-full max-w-xs h-1" />
-            <SkeletonBlock className="w-32 h-3" />
-          </View>
-          <View className="gap-4">
-            <SkeletonBlock className="w-36 h-6" />
-            <View className="flex-row gap-4">
-              {[1, 2].map((i) => (
-                <View key={i} className="flex-1 bg-surface-container-low rounded-xl p-5 gap-3 items-center">
-                  <SkeletonBlock className="w-10 h-10 rounded-full" />
-                  <SkeletonBlock className="w-16 h-7" />
-                  <SkeletonBlock className="w-20 h-3" />
-                </View>
-              ))}
-            </View>
-          </View>
-          <View className="gap-4">
-            <SkeletonBlock className="w-32 h-6" />
-            <View className="flex-row flex-wrap gap-2">
-              {[1, 2, 3].map((i) => (
-                <SkeletonBlock key={i} className="w-24 h-8 rounded-full" />
               ))}
             </View>
           </View>
