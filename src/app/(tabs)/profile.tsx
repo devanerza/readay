@@ -139,7 +139,9 @@ export default function Profile() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar
+        title="Profile"
+        rightActions={[{ icon: "settings", color: "#444841" }]} />
 
         <ScrollView
           className="flex-1 px-margin-page"

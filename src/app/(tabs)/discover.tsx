@@ -90,7 +90,9 @@ export default function Discover() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar 
+        title="Discover" 
+        rightActions={[{ icon: "settings", color: "#444841" }]} />
 
         <ScrollView
           className="flex-1 px-margin-page"
