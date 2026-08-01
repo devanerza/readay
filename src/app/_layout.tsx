@@ -19,7 +19,17 @@ import {
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth-store";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
 
 SplashScreen.preventAutoHideAsync();
 
