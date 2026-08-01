@@ -11,13 +11,15 @@ NativeWind (Tailwind for React Native), `react-hook-form`, and TypeScript.
 | code-2.html       | Discover             | `app/(tabs)/discover.tsx`         |
 | code-3.html       | Book Detail (Midnight Library) | `app/book-detail.tsx`  |
 | code-4.html       | Focused Reading / Session | `app/reading-session.tsx`   |
-| code-5.html       | Your Journey         | `app/(tabs)/journey.tsx`          |
+| code-5.html       | Your Journey         | merged into `app/(tabs)/profile.tsx` |
 | code-6.html       | Profile              | `app/(tabs)/profile.tsx`          |
-| —                 | Library (no mockup given) | `app/(tabs)/library.tsx` (placeholder) |
+| —                 | Library (no mockup given) | `app/(tabs)/library.tsx`          |
 
 Tabs live under `app/(tabs)/`, driven by a custom bottom tab bar in
 `app/(tabs)/_layout.tsx` that mirrors the original design's nav (Home,
-Discover, Library, Journey, Profile). Book Detail and Reading Session are
+Discover, Library, Profile). The Journey screen was removed and its sections
+(Consistency Vine, Recent Finishes, Evolving Tastes, Weekly Coach, Target
+Performance) now live inside Profile. Book Detail and Reading Session are
 pushed as stack screens from `app/_layout.tsx`.
 
 ## What changed vs. the HTML
@@ -37,8 +39,10 @@ pushed as stack screens from `app/_layout.tsx`.
 - **Search bar (Discover)**: rebuilt with `react-hook-form`'s `Controller` so
   the search field is form-managed and ready to wire to real search logic
   (`onSearch` in `discover.tsx`).
-- **Timer (Reading Session)**: the vanilla JS countdown/pause logic became a
-  `useState` + `useEffect` interval in `reading-session.tsx`.
+- **Timer (Reading Session)**: now a **stopwatch** — it counts up from 00:00 and
+  keeps running until the user taps "End Session". An optional target (passed
+  via `?target_minutes=`) from a schedule block shows a progress bar + "Target
+  reached!" flash, and the post-session summary compares actual vs. target.
 - **Hover/mousemove micro-interactions** (parallax on book cover, scroll
   reveal via `IntersectionObserver`) don't have direct RN equivalents and
   were dropped in favor of `active:scale-95`-style press feedback, which is
@@ -59,11 +63,9 @@ Make sure `app.json` has `"scheme"` set if you plan to deep link, and that
 
 ## Notes / TODO
 
-- `library.tsx` is a placeholder — no mockup was included in your upload for
-  that tab, so it just shows a friendly empty state. Send over that design
-  and I'll convert it the same way.
+- `library.tsx` was built without an original mockup (none was included) and
+  now shows the user's queue grouped by status (Want to Read / Reading /
+  Finished) with status toggles and a styled remove-book confirmation modal.
 - All book cover/avatar images point at the original `lh3.googleusercontent.com`
   URLs from your mockups — swap these for your own asset pipeline (Supabase
   storage, etc.) when ready.
-- Static content (books, stats, etc.) is hardcoded as sample data at the top
-  of each file — obvious places to swap in real Supabase queries later.

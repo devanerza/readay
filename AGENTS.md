@@ -49,16 +49,16 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 **Trigger/function points across Phase 4 (agent writes client code; Devan provisions DB-side):**
 - Genre weights auto-shift when a session is completed or abandoned (§3.1). Agent writes the client-side API call that notifies the update. Devan provisions the DB trigger or Edge Function that recalculates `profiles.genre_weights` from `reading_sessions`.
-- Profile stat tiles (reading time, pages turned, goal progress) and Journey streak/consistency data are **computed from `reading_sessions` and `queue_items` on read** — no new table. Agent writes the query; Devan may choose to materialize via a DB function or view.
+- Profile stat tiles (reading time, pages turned, goal progress) and streak/consistency data are **computed from `reading_sessions` and `queue_items` on read** — no new table. Agent writes the query; Devan may choose to materialize via a DB function or view. **Note: the Journey screen no longer exists — its sections (Consistency Vine, Recent Finishes, Evolving Tastes, Weekly Coach, Target Performance) were merged into the Profile screen.**
 
 1. **Profile** (§3.1 reference) — read/write `profiles`; genre weights rendered wherever the provided UI places them. Profile stat tiles (reading time, pages, goal) computed from `reading_sessions`. ✅ *Done*
-2. **Queue / Library → "Next Read"** (§3.2) — `queue_items` lib created with full CRUD. Library screen is still a placeholder (needs UI from web chat). Home screen's "Next Read" section wired to top queued item.
-3. **Schedule** (§3.3) — `schedule_blocks` lib created. Home screen shows upcoming block. **No dedicated Schedule screen exists yet** (needs UI from web chat — the PRD explicitly requires a Schedule tab or reachable screen).
-4. **Session Tracker** (§3.4) — wire Start → Done flow to write a `reading_sessions` row; verify minutes/pages persist correctly. ✅ *Done*
-5. **Weekly Coach** (§3.5) — rule-based template function implemented in `lib/weekly-coach.ts`, renders into Journey screen. Not yet persisted to `weekly_insights` table (computes on-the-fly).
+2. **Queue / Library → "Want to Read"** (§3.2) — `queue_items` lib created with full CRUD. Library screen is built (queue grouped by status, status toggles, remove modal). Home screen's "Want to Read" section is a horizontal carousel of queued items. ✅ *Done*
+3. **Schedule** (§3.3) — `schedule_blocks` lib created; dedicated Schedule screen exists (create/edit/delete blocks, optional book picker). Home screen shows upcoming block and passes its duration as `target_minutes` to the reading session. ✅ *Done*
+4. **Session Tracker** (§3.4) — Start → Done flow writes a `reading_sessions` row; session is a **stopwatch** (counts up, no countdown) with optional `target_minutes` stored on the row for analytics. ✅ *Done*
+5. **Weekly Coach** (§3.5) — rule-based template function implemented in `lib/weekly-coach.ts`, renders into Profile screen. Not yet persisted to `weekly_insights` table (computes on-the-fly).
 
 ### Phase 5 — Home (wiring)
-- [x] Bind Home sections (greeting/streak, Currently Reading, Next Read, Upcoming Session, Recently Finished) to Phase 4 queries
+- [x] Bind Home sections (greeting/streak, Currently Reading, Want to Read, Upcoming Session, Recently Finished) to Phase 4 queries
 - [x] QA that no section silently fails or shows stale data
 
 ### Phase 6 — QA Pass
@@ -71,29 +71,19 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 **Goal:** Close the gap between the current state and a fully-functioning MVP per PRD §1.3, §3, §5, §6.
 
 #### 7.1 — Schedule Screen (PRD §3.3, §6)
-- **Why:** The PRD's IA (§6) lists Schedule as its own nav destination (`Schedule → Weekly Calendar / Upcoming Sessions`). Currently only a summary reads from `schedule_blocks` on the Home screen — users have no way to create/edit/delete their schedule blocks.
-- **Depends on:** UI from web chat (Schedule screen design). Onboarding should also capture free-time blocks.
-- **What to wire:** CRUD for `schedule_blocks` table. TanStack Query mutations. React Hook Form for block creation (day_of_week, start_time, duration_minutes).
+- **Why:** The PRD's IA (§6) lists Schedule as its own nav destination (`Schedule → Weekly Calendar / Upcoming Sessions`). ✅ *Done* — dedicated Schedule screen now exists with create/edit/delete blocks and an optional book picker; Home shows the upcoming block and passes its duration as `target_minutes` to the reading session. Phase 10 cleanup may still apply.
 
 #### 7.2 — Library Screen — Queue Management (PRD §3.2)
-- **Why:** The Library tab is a placeholder. Users need to see their full queue (grouped by status), change book status, and manage their list.
-- **Depends on:** UI from web chat (Library grid/list design).
-- **What to wire:** Query `queue_items` joined with `books`. Tabs/sections for queued / reading / finished. Status toggle mutation. Book cover rendering.
+- **Why:** ✅ *Done* — Library screen is built: queue grouped by status (Want to Read / Reading / Finished), status toggles, remove-book confirmation modal, and cover rendering.
 
 #### 7.3 — Discover + Book Detail via Open Library API (PRD §3.2)
-- **Why:** Both screens are 100% hardcoded mock data. Users can't discover real books or see real book metadata.
-- **No UI dependency** — screens already exist with mock data; just swap in real data while preserving layout.
-- **What to wire:**
-  1. Migrate `books` table to match Open Library schema (see reference below)
-  2. `lib/open-library.ts` — raw API client:
-     - `searchBooks(query)` → `https://openlibrary.org/search.json?q={query}`
-     - `getBookDetails(olId)` → `https://openlibrary.org/works/{olId}.json`
-     - `getBooksBySubject(subject)` → `https://openlibrary.org/subjects/{subject}.json?limit=20`
-     - Cover URL builder: `https://covers.openlibrary.org/b/id/{cover_id}-L.jpg`
-  3. `lib/book-service.ts` — orchestrator: search OL → upsert to Supabase `books` → return local book objects
-  4. **Discover screen:** wire search (debounced 300ms), genre-filtered browsing, "Based on Your Favorites" from `profile.genre_weights`, "Perfect for Tonight" from curated subject
-  5. **Book Detail screen:** read book from Supabase `books` table by `book_id` route param; compute progress from `reading_sessions` for this `book_id`
-  6. **Actions:** "Add to Queue" → `addToQueue()`, "Start Reading" → navigate to `reading-session?book_id={id}`
+- **Why:** Both screens were 100% hardcoded mock data. Now wired to real Open Library data. ✅ *Done*
+- **What was wired:**
+  1. `lib/open-library.ts` — raw API client: `searchBooks`, `getBookDetails`, `getBooksBySubject`, cover URL builder, plus `getWorkPageCount` (page counts via editions) and `getAuthorNames` (resolves OL author keys to names)
+  2. `lib/book-service.ts` — orchestrator: search OL → upsert to Supabase `books` → return local book objects (caches author + page_count)
+  3. **Discover screen:** debounced search, genre-filtered browsing, "Based on Your Favorites" from `profile.genre_weights`, "Perfect for Tonight" from curated subject
+  4. **Book Detail screen:** reads book from Supabase `books` table by `book_id` route param; computes progress from `reading_sessions` for this `book_id`
+  5. **Actions:** "Add to Library" → `cacheBookFromDetail()` then `addToQueue()` (book detail now has a single CTA; "Start Reading" was removed)
 - **Migration proposal (for Devan to run):**
   ```sql
   CREATE TABLE IF NOT EXISTS public.books (
@@ -129,7 +119,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
   - Can be client-side (re-sort in TanStack Query on cache invalidation) or via Edge Function
 
 #### 7.6 — Weekly Coach Persistence (PRD §8.3)
-- **Why:** Weekly Coach currently computes on-the-fly each Journey load. Should cache to `weekly_insights` for consistency.
+- **Why:** Weekly Coach currently computes on-the-fly each Profile load. Should cache to `weekly_insights` for consistency.
 - **What to wire:**
   - Write `generateWeeklyInsight()` output to `weekly_insights` table (upsert by week_start)
   - Read from `weekly_insights` first; fall back to on-the-fly generation if no cached row
@@ -138,7 +128,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 #### 7.7 — Foundational Layer Cleanup
 - **i18n/strings layer (AGENTS #5):** Create `lib/strings/en.json` with all UI copy. Refactor every screen to pull strings from the layer. Enables Bahasa Indonesia fast-follow (PRD §10.2).
 - **Error handling:** Add Toast/Alert to all async Supabase operations. Show retry buttons on query failures.
-- **Hardcoded items on Profile:** Preferences section and avatar URL need a schema/storage solution (post-MVP). For MVP, link avatar to Gravatar by email or supabase auth avatar.
+- **Hardcoded items on Profile:** Preferences section (and avatar, if re-added) need a schema/storage solution (post-MVP). For MVP, link avatar to Gravatar by email or supabase auth avatar.
 
 ---
 
@@ -147,13 +137,8 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 **Goal:** Complete the Start Reading → Session → End Session loop so it works end-to-end with real data.
 
 #### 8.1 — Wire Reading Session to Real Book Data
-- **Why:** `reading-session.tsx` still uses hardcoded mock data (book cover, avatar, Cicero quote). The timer and session-saving work, but the UI doesn't show the actual book being read.
-- **What to fix:**
-  1. Read `book_id` from the query params (already supported)
-  2. Fetch book details from the `books` table via `book_id`
-  3. Show the real cover image, title, and author instead of mock data
-  4. Keep the timer, pause, and End Session flow as-is
-  5. Remove the hardcoded quote/avatar/cover
+- **Why:** `reading-session.tsx` used hardcoded mock data (book cover, avatar, Cicero quote). Now fixed: reads `book_id` from params, fetches real cover/title/author from the `books` table, and runs as a **stopwatch** (no countdown). ✅ *Done*
+- **Remaining:** the stopwatch accepts an optional `target_minutes` param (passed from schedule blocks) — displayed as a progress reference and stored on the session row for target-performance analytics (shown in Profile). Post-session flow: summary modal (actual vs. target) → page-input modal → saves pages.
 
 #### 8.2 — Library "Start Reading" Redirects to Reading Session
 - **Why:** The Library screen's "Start Reading" button (on the "Want to Read" tab) only toggles the queue item status to `reading` but does NOT navigate to the reading session screen. Users must manually find and tap the book again.
