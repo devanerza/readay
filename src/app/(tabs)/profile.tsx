@@ -1,14 +1,18 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getProfile } from "../../lib/profiles";
-import { getReadingStats } from "../../lib/reading-sessions";
+import { getReadingStats, getWeeklySessionDays, getTargetPerformance } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
+import { generateWeeklyInsight } from "../../lib/weekly-coach";
 import TopAppBar from "../../components/TopAppBar";
 import StatTile from "../../components/StatTile";
 import { ProfileSkeleton } from "../../components/SkeletonScreens";
+import { BookCardVertical } from "../../components/BookCard";
+import ReflectionCard from "../../components/ReflectionCard";
 import Icon, { type IconName } from "../../components/Icon";
 
 const QUOTES = [
@@ -48,6 +52,7 @@ const PREFERENCES: { icon: IconName; label: string; value: string }[] = [
 ];
 
 export default function Profile() {
+  const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
 
@@ -69,6 +74,55 @@ export default function Profile() {
     enabled: !!userId,
   });
 
+  const { data: weekData } = useQuery({
+    queryKey: ["weekly-session-days", userId],
+    queryFn: () => getWeeklySessionDays(userId!, 2),
+    enabled: !!userId,
+  });
+
+  const { data: insight, isLoading: insightLoading } = useQuery({
+    queryKey: ["weekly-insight", userId],
+    queryFn: () => generateWeeklyInsight(userId!),
+    enabled: !!userId,
+  });
+
+  const { data: finishedBooks } = useQuery({
+    queryKey: ["finished-books", userId],
+    queryFn: () => getQueueItems(userId!, 'finished'),
+    enabled: !!userId,
+  });
+
+  const { data: targetPerf } = useQuery({
+    queryKey: ["target-performance", userId],
+    queryFn: () => getTargetPerformance(userId!),
+    enabled: !!userId,
+  });
+
+  const vineDots = useMemo(() => {
+    if (!weekData || weekData.length === 0) return [];
+    const days = weekData.slice(-14);
+    return days.map((d) => {
+      const hasSession = d.minutes > 0;
+      const intensity = Math.min(d.minutes / 30, 1);
+      return {
+        size: hasSession ? Math.round(8 + intensity * 16) : 6,
+        active: hasSession,
+      };
+    });
+  }, [weekData]);
+
+  const genreEntries = useMemo(() => {
+    if (!profile?.genre_weights) return [];
+    const weights = profile.genre_weights as Record<string, number>;
+    return Object.entries(weights)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 2);
+  }, [profile]);
+
+  const completionRate = stats && stats.sessionsCount > 0
+    ? Math.round((stats.streakDays / Math.max(stats.sessionsCount, 14)) * 100)
+    : 0;
+
   const genreLabels = Object.keys(profile?.genre_weights ?? {});
   const currentYear = new Date().getFullYear();
   const goalText = profile
@@ -78,7 +132,7 @@ export default function Profile() {
     ? Math.min((stats?.booksCompleted ?? 0) / profile.yearly_goal * 100, 100)
     : 0;
 
-  const isLoading = profileLoading || statsLoading;
+  const isLoading = profileLoading || statsLoading || insightLoading;
 
   if (isLoading) return <ProfileSkeleton />;
 
@@ -93,16 +147,16 @@ export default function Profile() {
           showsVerticalScrollIndicator={false}
         >
           {/* Profile Header */}
-          <View className="items-center mt-8 gap-4 px-4">
-            <Text className="font-display text-[22px] leading-[30px] text-on-surface text-center italic">
-              "{getRandomQuote()}"
+          <View className="items-center mt-8 gap-4 px-2">
+            <Text className="font-display text-[30px] leading-[40px] text-on-surface text-center">
+              "{getSeasonMantra()}, {profile?.display_name ?? " "}"
             </Text>
-            <View className="flex-row items-center gap-2">
+            {/* <View className="flex-row items-center gap-2">
               <View className="h-px w-6 bg-outline/30" />
               <Text className="font-title-lg text-on-surface-variant">{profile?.display_name ?? "Reader"}</Text>
               <View className="h-px w-6 bg-outline/30" />
             </View>
-            <Text className="font-body-md text-primary">{getSeasonMantra()}</Text>
+            <Text className="font-body-md text-primary">{getSeasonMantra()}</Text> */}
           </View>
 
           {/* Reading Goal */}
@@ -158,6 +212,139 @@ export default function Profile() {
                 )}
             </View>
           </View>
+
+          {/* Consistency Vine */}
+          <View className="p-6 bg-surface-container-low rounded-[32px] gap-6">
+            <View className="flex-row justify-between items-end">
+              <View className="gap-1">
+                <Text className="font-title-lg text-on-surface">Consistency Vine</Text>
+                <Text className="font-label-md text-on-surface-variant">
+                  {stats && stats.streakDays > 0
+                    ? `${stats.streakDays} day${stats.streakDays !== 1 ? "s" : ""} of mindfulness`
+                    : "Start reading to grow your vine"}
+                </Text>
+              </View>
+              <View className="items-end">
+                <Text className="font-display text-headline-lg text-primary">
+                  {completionRate > 0 ? `${completionRate}%` : "—"}
+                </Text>
+                <Text className="text-caption text-outline">Completion Rate</Text>
+              </View>
+            </View>
+            <View className="relative h-16 flex-row items-center justify-between px-1">
+              {vineDots.length > 0
+                ? vineDots.map((dot, i) => (
+                    <View
+                      key={i}
+                      className={`rounded-full ${dot.active ? "bg-primary" : "bg-outline-variant"}`}
+                      style={{ width: dot.size, height: dot.size }}
+                    />
+                  ))
+                : <Text className="font-body-md text-on-surface-variant w-full text-center">No data yet</Text>
+              }
+            </View>
+          </View>
+
+          {/* Recent Finishes */}
+          <View className="gap-4">
+            <View className="flex-row justify-between items-center">
+              <Text className="font-title-lg text-on-surface">Recent Finishes</Text>
+              <Pressable onPress={() => router.push("/library" as never)}>
+                <Text className="text-primary font-label-md">View All</Text>
+              </Pressable>
+            </View>
+            {finishedBooks && finishedBooks.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+                {finishedBooks.map((item) => (
+                  <BookCardVertical
+                    key={item.id}
+                    book={{
+                      title: item.books?.title ?? "Unknown",
+                      author: item.books?.author,
+                      cover_url: item.books?.cover_url,
+                    }}
+                    subtitle={item.books?.author}
+                  />
+                ))}
+              </ScrollView>
+            ) : (
+              <Text className="font-body-md text-on-surface-variant">
+                Finished books will appear here.
+              </Text>
+            )}
+          </View>
+
+          {/* Evolving Tastes */}
+          <View className="gap-6 items-center">
+            <View className="gap-3 w-full">
+              <Text className="font-title-lg text-on-surface">Evolving Tastes</Text>
+              <Text className="font-body-md text-on-surface-variant">
+                {profile && genreEntries.length === 2
+                  ? `You're enjoying ${genreEntries[0][0]} and ${genreEntries[1][0]} this season.`
+                  : "Your genre preferences from onboarding will guide your recommendations."}
+              </Text>
+              <View className="flex-row flex-wrap gap-2">
+                {genreEntries.map(([genre, weight]) => (
+                  <View key={genre} className={`px-4 py-1.5 rounded-full ${(weight as number) > 0.5 ? "bg-primary/10" : "bg-secondary/10"}`}>
+                    <Text className={`font-label-md ${(weight as number) > 0.5 ? "text-primary" : "text-secondary"}`}>
+                      {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* Weekly Coach */}
+          <View className="gap-4">
+            <Text className="font-title-lg text-on-surface">Weekly Coach</Text>
+            <View className="gap-4">
+              <ReflectionCard
+                icon="auto_awesome"
+                iconBg="bg-primary-fixed"
+                iconColor="#52634c"
+                text={insight?.narrative ?? "Start a reading session to get your personalized weekly insight."}
+              />
+              <ReflectionCard
+                icon="lightbulb"
+                iconBg="bg-secondary-fixed"
+                iconColor="#7d562d"
+                text={insight?.recommendation ?? "Log your first session and check back here for tailored recommendations."}
+              />
+            </View>
+          </View>
+
+          {/* Target Performance */}
+          {targetPerf && targetPerf.totalWithTarget > 0 ? (
+            <View className="gap-4">
+              <Text className="font-title-lg text-on-surface">Target Performance</Text>
+              <View className="bg-surface-container-low rounded-2xl p-5 gap-4">
+                <View className="flex-row justify-between items-center">
+                  <Text className="font-body-md text-on-surface-variant">Average session</Text>
+                  <Text className="font-title-lg text-on-surface">{targetPerf.averageSessionMinutes} min</Text>
+                </View>
+                <View className="flex-row justify-between items-center">
+                  <Text className="font-body-md text-on-surface-variant">Average target</Text>
+                  <Text className="font-title-lg text-on-surface">{targetPerf.averageTargetMinutes} min</Text>
+                </View>
+                <View className="h-px bg-surface-variant" />
+                <View className="flex-row justify-around">
+                  <View className="items-center gap-1">
+                    <Text className="font-display text-headline-md text-secondary">{targetPerf.exceededCount}</Text>
+                    <Text className="text-caption text-on-surface-variant">Exceeded</Text>
+                  </View>
+                  <View className="items-center gap-1">
+                    <Text className="font-display text-headline-md text-primary">{targetPerf.metCount}</Text>
+                    <Text className="text-caption text-on-surface-variant">Met</Text>
+                  </View>
+                  <View className="items-center gap-1">
+                    <Text className="font-display text-headline-md text-outline">{targetPerf.fellShortCount}</Text>
+                    <Text className="text-caption text-on-surface-variant">Fell short</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          ) : null}
 
           {/* Personal Library Link */}
           <Pressable className="bg-surface-container-lowest border border-surface-variant/20 rounded-xl p-4 flex-row items-center justify-between active:bg-surface-container-low">
