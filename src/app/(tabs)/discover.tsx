@@ -131,10 +131,10 @@ export default function Discover() {
           </ScrollView>
 
           {searching && debouncedQuery ? (
-            <View className="flex-row flex-wrap gap-x-4 gap-y-6 pt-4">
+            <View className="gap-y-6 pt-4">
               {[1, 2, 3, 4].map((i) => (
-                <View key={i} className="w-[45%] gap-2">
-                  <SkeletonBlock className="w-full aspect-[2/3] rounded-lg" />
+                <View key={i} className="w-full gap-2">
+                  <SkeletonBlock className="w-full aspect-[3/4] rounded-lg" />
                   <SkeletonBlock className="w-full h-4" />
                   <SkeletonBlock className="w-2/3 h-3" />
                 </View>
@@ -177,10 +177,10 @@ export default function Discover() {
               {favoriteLoading && (
                 <View className="gap-4">
                   <SkeletonBlock className="w-52 h-7" />
-                  <View className="flex-row flex-wrap gap-x-4 gap-y-6">
+                  <View className="gap-y-6">
                     {[1, 2, 3, 4].map((i) => (
-                      <View key={i} className="w-[45%] gap-2">
-                        <SkeletonBlock className="w-full aspect-[2/3] rounded-lg" />
+                      <View key={i} className="w-full gap-2">
+                        <SkeletonBlock className="w-full aspect-[3/4] rounded-lg" />
                         <SkeletonBlock className="w-full h-4" />
                         <SkeletonBlock className="w-2/3 h-3" />
                       </View>
@@ -191,16 +191,16 @@ export default function Discover() {
               {!favoriteLoading && favoriteDocs.length > 0 && (
                 <View className="gap-4">
                   <Text className="font-headline-lg-mobile text-on-surface">Based on Your Favorites</Text>
-                  <View className="flex-row flex-wrap gap-x-4 gap-y-6">
+                  <View className="gap-y-6">
                     {favoriteDocs.map((doc) => {
                       const d = olToDisplay(doc);
                       return (
                         <Pressable
                           key={d.key}
-                          className="w-[45%]"
+                          className="w-full h-full"
                           onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
                         >
-                          <View className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-surface-variant">
+                          <View className="aspect-[3/4] w-full h-full rounded-lg overflow-hidden bg-surface-variant">
                             {d.cover_url ? (
                               <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
                             ) : (
@@ -225,16 +225,16 @@ export default function Discover() {
                   <Text className="font-headline-lg-mobile text-on-surface">
                     {debouncedQuery ? `Results for "${debouncedQuery}"` : `${activeGenre} Books`}
                   </Text>
-                  <View className="flex-row flex-wrap gap-x-4 gap-y-6">
+                  <View className="gap-y-6">
                     {displayDocs.map((doc) => {
                       const d = olToDisplay(doc);
                       return (
                         <Pressable
                           key={d.key}
-                          className="w-[45%]"
+                          className="w-full"
                           onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
                         >
-                          <View className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-surface-variant">
+                          <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
                             {d.cover_url ? (
                               <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
                             ) : (
