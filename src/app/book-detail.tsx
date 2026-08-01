@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable, Alert } from "react-native";
+import { View, Text, ScrollView, Image, Pressable } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
 import { BookDetailSkeleton } from "../components/SkeletonScreens";
+import Toast from "../components/Toast";
 import Icon from "../components/Icon";
 
 export default function BookDetail() {
@@ -22,6 +23,7 @@ export default function BookDetail() {
   const userId = session?.user.id;
   const queryClient = useQueryClient();
   const [adding, setAdding] = React.useState(false);
+  const [toast, setToast] = React.useState<string | null>(null);
 
   const { data: localBook, isLoading: localLoading } = useQuery({
     queryKey: ["local-book", book_id || open_library_id],
@@ -92,10 +94,10 @@ export default function BookDetail() {
     try {
       const bookId = await cacheBookFromDetail(olId);
       await addToQueue({ user_id: userId, book_id: bookId });
-      Alert.alert("Added", `${detail?.title ?? "Book"} added to your library.`);
+      setToast("Added to your library");
     } catch (e) {
       const msg = e instanceof Error ? e.message : typeof e === 'object' && e ? (e as any).message ?? JSON.stringify(e) : String(e);
-      Alert.alert("Error", `Could not add: ${msg}`);
+      setToast(`Could not add: ${msg}`);
     } finally {
       setAdding(false);
     }
@@ -223,6 +225,8 @@ export default function BookDetail() {
           ) : null}
         </ScrollView>
       </SafeAreaView>
+
+      <Toast message={toast} onDismiss={() => setToast(null)} />
     </View>
   );
 }

@@ -20,7 +20,7 @@ export default function TabSwitcher({ tabs, activeKey, onSelect }: Props) {
         <Pressable
           key={tab.key}
           onPress={() => onSelect(tab.key)}
-          className={`px-5 py-2 rounded-full ${activeKey === tab.key ? "bg-primary" : "bg-surface-variant"}`}
+          className={`px-5 py-2 rounded-full ${activeKey === tab.key ? "bg-primary" : "bg-on-primary"}`}
         >
           <Text className={`font-label-md ${activeKey === tab.key ? "text-on-primary" : "text-on-surface-variant"}`}>
             {tab.label}

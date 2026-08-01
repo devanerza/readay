@@ -9,6 +9,7 @@ import TopAppBar from "../../components/TopAppBar";
 import TabSwitcher from "../../components/TabSwitcher";
 import EmptyState from "../../components/EmptyState";
 import { LibrarySkeleton } from "../../components/SkeletonScreens";
+import ConfirmModal from "../../components/ConfirmModal";
 import Icon from "../../components/Icon";
 
 const TABS = [
@@ -25,6 +26,7 @@ export default function Library() {
   const userId = session?.user.id;
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>("want_to_read");
+  const [removeTarget, setRemoveTarget] = useState<{ id: string; title: string } | null>(null);
 
   const { data: items, isLoading } = useQuery({
     queryKey: ["queue-items", userId, activeTab],
@@ -160,12 +162,7 @@ export default function Library() {
                     </Pressable>
                   ) : null}
                   <Pressable
-                    onPress={() => {
-                      Alert.alert("Remove Book", `Remove "${item.books?.title ?? "this book"}" from your library?`, [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Remove", style: "destructive", onPress: () => deleteMutation.mutate(item.id) },
-                      ]);
-                    }}
+                    onPress={() => setRemoveTarget({ id: item.id, title: item.books?.title ?? "this book" })}
                     className={`flex-1 py-3 items-center active:bg-surface-variant ${next || item.status === "reading" ? "border-l border-surface-variant/20" : ""}`}
                   >
                     <Text className="font-label-md text-error text-sm">Remove</Text>
@@ -184,6 +181,18 @@ export default function Library() {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      <ConfirmModal
+        visible={!!removeTarget}
+        title="Remove Book"
+        message={`Remove "${removeTarget?.title ?? "this book"}" from your library? This won't delete your reading history.`}
+        confirmLabel="Remove"
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => {
+          if (removeTarget) deleteMutation.mutate(removeTarget.id);
+          setRemoveTarget(null);
+        }}
+      />
     </View>
   );
 }

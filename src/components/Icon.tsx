@@ -34,6 +34,7 @@ const ICON_MAP: Record<string, keyof typeof MaterialIcons.glyphMap> = {
   delete: "delete",
   close: "close",
   check: "check",
+  check_circle: "check-circle",
   calendar_month: "calendar-month",
   add_circle: "add-circle",
   remove_red_eye: "remove-red-eye",
