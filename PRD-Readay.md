@@ -106,15 +106,15 @@ Sign Up → Genre Profiling → Personalized Queue → Choose Book
 ## 6. Information Architecture
 
 ```
-Home        → Today's Reading / Continue Reading / Next Session / Weekly Progress
-Discover    → Curated collections, staff picks, browse by genre
-Library     → Current / Queue / Finished
-Schedule    → Weekly Calendar / Upcoming Sessions
-Journey     → Weekly Report / Reading Habit / Favorite Genres / Recommendations
-Profile     → Reading Goal / Preferred Genres / Preferences
+Home        → Continue Reading / Next Session / Want to Read / Recently Finished / Weekly Progress
+Discover    → Curated collections, genre browse, search
+Library     → Queue grouped by status (Want to Read / Reading / Finished)
+Profile     → Reading Goal / Preferences / Journey Sections
+             (Weekly Coach, Consistency, Evolving Tastes, Target Performance, Stats)
+Schedule    → Dedicated screen (not a tab): Today's Blocks / All Blocks
 ```
 
-**Status note:** the current UI mockups implement Home, Discover, Library, Journey, and Profile as the bottom nav — **Schedule is missing and is still required** (see §3.3). It needs to be added either as its own nav tab or reachable from an existing screen (e.g. Home or Journey); this hasn't been decided yet and should be resolved before that screen is designed. "Journey" in the mockups corresponds to the "Insights" concept in earlier drafts of this PRD — renamed here to match the shipped UI.
+**Status note:** the shipped UI implements four bottom-nav tabs — **Home, Discover, Library, Profile** — driven by a custom bottom bar in `(tabs)/_layout.tsx`. The former **Journey** screen was merged into **Profile**; its sections (Weekly Coach, Consistency Vine, Recent Finishes, Evolving Tastes, Target Performance) now live there. **Schedule is implemented** (see §3.3) as its own dedicated screen rather than a tab, reachable from Home; its blocks pass `target_minutes` to the reading session. **Book Detail** and **Reading Session** are pushed as stack screens, and **Auth / Sign-in / Onboarding** sit outside the tabs.
 
 ---
 
