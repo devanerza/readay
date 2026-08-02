@@ -1,56 +1,161 @@
-# Welcome to your Expo app 👋
+# Readay 📚
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> Your daily reading coach — discover books you'll genuinely enjoy and build a reading habit that lasts.
 
-## Get started
+Readay is a premium, mobile-first reading app that helps readers discover books they love and finish more of them. It replaces a search-first catalog with a personalized "read next" queue, a gentle weekly schedule, minimal friction reading sessions, and quiet habit coaching tucked into a cozy, editorial interface.
 
-1. Install dependencies
+> 📖 Product design and roadmap live in **[PRD-Readay.md](./PRD-Readay.md)**. Build/execution notes live in **[Execution-Plan-Readay.md](./Execution-Plan-Readay.md)**.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## ✨ Features
 
-   ```bash
-   npx expo start
-   ```
+### 🔍 Discover
+- Real book search against the **Open Library API** (no API key required)
+- Curated genre browsing, "Based on Your Favorites" (driven by your genre weights), and "Perfect for Tonight" picks
+- Rich **Book Detail** page: description, author, page count, cover, and your reading progress
 
-In the output, you'll find options to open the app in a
+### 📚 Reading Library / Queue
+- **Want to Read / Reading / Finished** tabs
+- One-tap status toggles (+ **Resume** and **Start Reading** jump straight into a session)
+- Remove-a-book confirmation modal
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 🗓️ Schedule
+- Create, edit, and delete reading time blocks (day, start time, duration, optional book)
+- **Today's Blocks** and a flat **All Blocks** list
+- Home surfaces your next upcoming block and passes its duration into the session as a reading target
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### ⏱️ Reading Session Tracker
+- Deliberately minimal **stopwatch** (counts up, no countdown)
+- Optional target from a schedule block with a progress bar and **"Target reached!"** flash
+- **End Session → Summary (actual vs. target) → enter page reached → saves pages** and progress
 
-## Get a fresh project
+### 🏠 Home
+- Continue Reading (as a carousel of every book you're reading), Next Session, Want to Read, Recently Finished, and a weekly minutes/streak summary
 
-When you're ready, run:
+### 🧭 Profile & Weekly Coach
+- Reading-goal and genre-preference tiles with stats computed live from your sessions (time, pages, streak, goal progress)
+- **Weekly Coach** — a rule-based narrative insight + one actionable recommendation
+- Weekly habit grid, evolving genre tastes, and target-performance recap
 
-```bash
-npm run reset-project
+### 👤 Auth & Onboarding
+- Email + password sign-up / sign-in (auto-confirmed — no email verification step)
+- Onboarding questionnaire fed into your `profiles` genre weights and goals
+
+---
+
+## 🧱 Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Mobile framework | **Expo / React Native** (`~57`) with **Expo Router** (file-based) |
+| Backend | **Supabase** (Postgres + Auth) |
+| Language | **TypeScript** |
+| Styling | **NativeWind** (Tailwind for React Native), EB Garamond + Inter |
+| Server state | **TanStack Query (React Query)** |
+| Client state | **Zustand** |
+| Forms | **React Hook Form** |
+| Book metadata | **Open Library API** (search, works, covers, editions) |
+| Notifications (planned) | Expo Notifications |
+
+---
+
+## 📁 Project structure
+
+```
+src/
+├── app/                    # Expo Router (file-based) screens
+│   ├── (tabs)/             # Home · Discover · Library · Profile
+│   ├── auth.tsx            # Auth / mode toggle
+│   ├── sign-in.tsx         # Returning-user sign-in
+│   ├── onboarding.tsx      # Preference questionnaire
+│   ├── schedule.tsx        # Schedule blocks (read-only screen)
+│   ├── book-detail.tsx     # Book details + Add to Library
+│   └── reading-session.tsx # Stopwatch session tracker
+├── components/             # Reusable UI (BookCard, TabSwitcher, EmptyState, …)
+├── lib/                    # Data access & services
+│   ├── supabase.ts         # Supabase client
+│   ├── queue-items.ts      # Library queue CRUD
+│   ├── schedule-blocks.ts  # Schedule blocks CRUD
+│   ├── profiles.ts         # Onboarding / profile
+│   ├── reading-sessions.ts # Session stats & logging
+│   ├── books.ts / book-service.ts  # Book cache + OL orchestration
+│   ├── open-library.ts     # Raw Open Library API client
+│   └── weekly-coach.ts     # Rule-based insights
+├── stores/                 # Zustand (auth)
+├── i18n/                   # strings layer (en.json)
+├── hooks/                  # theme / color scheme
+└── global.css / theme.ts   # design tokens
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-### Other setup steps
+## 🚀 Getting Started
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### 1. Prerequisites
+- Node.js and npm
+- An Expo / React Native development environment
+- A Supabase project with the schema below
 
-## Learn more
+### 2. Install
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm install
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 3. Configure environment
 
-## Join the community
+Create a `.env` file in the project root:
 
-Join our community of developers creating universal apps.
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 4. Run
+
+```bash
+npx expo start
+```
+
+Then press **a** (Android), **i** (iOS), **w** (web — React Native Web), or open it in **Expo Go**.
+
+---
+
+## 📦 Supabase setup
+
+The app expects the following tables (RLS policy on each is `user_id = auth.uid()`). See the reference schema in **PRD-Readay.md §8.3** for the full definition:
+
+| Table | Purpose |
+|---|---|
+| `profiles` | Onboarding answers, genre weights, goal, prefs |
+| `books` | Cached book metadata (synced from Open Library) |
+| `queue_items` | user's "Want to Read / Reading / Finished" queue |
+| `reading_sessions` | logged session deltas + pages + target |
+| `schedule_blocks` | user's reading time blocks |
+| `weekly_insights` | cached Weekly Coach output |
+
+> The app talks to this shape via the client code only — the schema is provisioned independently (see the PRD's note under Tech Stack).
+
+---
+
+## 🛠️ Notes & roadmap
+
+Implemented:
+- [x] Full book discovery + detail via Open Library, cached into the local `books` table
+- [x] Library queue with start/resume/session redirection
+- [x] Session stopwatch with schedule-driven targets and page logging
+- [x] Rule-based Weekly Coach, stats & streak computed from sessions
+- [x] i18n strings layer (English)
+
+Upcoming / planned (per the PRD, not yet implemented here):
+- Genre-weight auto-shift on session completion, queue re-ranking
+- Weekly Coach persistence to `weekly_insights`
+- Notifications (Expo Notifications) for schedule reminders
+- Bahasa Indonesia locale fast-follow
+
+---
+
+## 📄 License
+
+Private / internal. See the product docs for details.
