@@ -7,7 +7,7 @@ import { useAuthStore } from "../stores/auth-store";
 import { getBook, getBookByOlId } from "../lib/books";
 import { getBookDetails, buildCoverUrl, getWorkPageCount, getAuthorNames } from "../lib/open-library";
 import { cacheBookFromDetail } from "../lib/book-service";
-import { addToQueue, getCurrentPage } from "../lib/queue-items";
+import { addToQueue, getCurrentPage, getQueueItemForBook } from "../lib/queue-items";
 import { getReadingStats } from "../lib/reading-sessions";
 import { supabase } from "../lib/supabase";
 import TopAppBar from "../components/TopAppBar";
@@ -79,6 +79,12 @@ export default function BookDetail() {
     enabled: !!localBookId && !!userId,
   });
 
+  const { data: queueItem } = useQuery({
+    queryKey: ["queue-item", localBookId, userId],
+    queryFn: () => getQueueItemForBook(localBookId!, userId!),
+    enabled: !!localBookId && !!userId,
+  });
+
   const { data: stats } = useQuery({
     queryKey: ["reading-stats", userId],
     queryFn: () => getReadingStats(userId!),
@@ -96,6 +102,8 @@ export default function BookDetail() {
     try {
       const bookId = await cacheBookFromDetail(olId);
       await addToQueue({ user_id: userId, book_id: bookId });
+      queryClient.invalidateQueries({ queryKey: ["local-book", book_id || open_library_id] });
+      queryClient.invalidateQueries({ queryKey: ["queue-item"] });
       setToast("Added to your library");
     } catch (e) {
       const msg = e instanceof Error ? e.message : typeof e === 'object' && e ? (e as any).message ?? JSON.stringify(e) : String(e);

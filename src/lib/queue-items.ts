@@ -117,6 +117,16 @@ export async function getCurrentPage(bookId: string, userId: string): Promise<nu
   return data?.current_page ?? 0;
 }
 
+export async function getQueueItemForBook(bookId: string, userId: string): Promise<QueueItem | null> {
+  const { data } = await supabase
+    .from('queue_items')
+    .select('*')
+    .eq('book_id', bookId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  return data;
+}
+
 export async function updateCurrentPage(bookId: string, userId: string, page: number) {
   const { error } = await supabase
     .from('queue_items')
