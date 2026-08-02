@@ -8,6 +8,7 @@ export default function ConfirmModal({
   message,
   confirmLabel = "Confirm",
   icon = "delete",
+  tone = "danger",
   onCancel,
   onConfirm,
 }: {
@@ -16,17 +17,20 @@ export default function ConfirmModal({
   message: string;
   confirmLabel?: string;
   icon?: IconName;
+  tone?: "danger" | "primary";
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const isPrimary = tone === "primary";
+  const iconColor = isPrimary ? "#52634c" : "#ba1a1a";
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View className="flex-1 bg-black/40">
         <View className="flex-1 justify-end">
           <View className="bg-surface rounded-t-3xl p-8 pb-12 gap-8">
             <View className="items-center gap-4">
-              <View className="p-4 bg-error/10 rounded-3xl">
-                <Icon name={icon} size={36} color="#ba1a1a" />
+              <View className={`p-4 rounded-3xl ${isPrimary ? "bg-primary/10" : "bg-error/10"}`}>
+                <Icon name={icon} size={36} color={iconColor} />
               </View>
               <Text className="font-display text-headline-md text-on-surface text-center">{title}</Text>
               <Text className="font-body-md text-on-surface-variant text-center leading-relaxed">{message}</Text>
@@ -41,7 +45,7 @@ export default function ConfirmModal({
               </Pressable>
               <Pressable
                 onPress={onConfirm}
-                className="flex-1 py-4 rounded-full bg-error items-center active:opacity-90"
+                className={`flex-1 py-4 rounded-full items-center active:opacity-90 ${isPrimary ? "bg-primary" : "bg-error"}`}
               >
                 <Text className="font-label-lg text-white">{confirmLabel}</Text>
               </Pressable>

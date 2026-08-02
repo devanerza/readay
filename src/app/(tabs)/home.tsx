@@ -11,6 +11,7 @@ import { getProfile } from "../../lib/profiles";
 import TopAppBar from "../../components/TopAppBar";
 import { HomeSkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
+import ConfirmModal from "../../components/ConfirmModal";
 import Icon from "../../components/Icon";
 
 function getGreeting() {
@@ -31,6 +32,7 @@ export default function Home() {
   const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
+  const [confirmStart, setConfirmStart] = React.useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ["profile", userId],
@@ -134,7 +136,7 @@ export default function Home() {
                 </View>
               </Pressable>
               <Pressable
-                onPress={() => router.push(nextBlock.books ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}` : "/reading-session")}
+                onPress={() => setConfirmStart(true)}
               >
                 <View className="rounded-[24px] overflow-hidden">
                   {nextBlock.books?.cover_url ? (
@@ -263,7 +265,7 @@ export default function Home() {
                 {readingItems.map((item) => (
                   <Pressable
                     key={item.id}
-                    onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
+                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
                     className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
                     <View className="w-full h-[350px] bg-surface-variant">
@@ -322,7 +324,7 @@ export default function Home() {
                 {wantToReadItems.map((item) => (
                   <Pressable
                     key={item.id}
-                    onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
+                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
                     className="w-[220] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
                     <View className="w-full h-[350] bg-surface-variant">
@@ -381,7 +383,7 @@ export default function Home() {
                       author: item.books?.author,
                       cover_url: item.books?.cover_url,
                     }}
-                    onPress={() => router.push("/book-detail" as never)}
+                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
                     subtitle={item.books?.author}
                   />
                 ))}
@@ -390,6 +392,20 @@ export default function Home() {
           ) : null}
         </ScrollView>
       </SafeAreaView>
+
+      <ConfirmModal
+        visible={confirmStart}
+        title="Start reading session?"
+        message={nextBlock?.books ? `Start "${nextBlock.books.title}"?` : "Start your scheduled reading session now?"}
+        confirmLabel="Start"
+        icon="auto_stories"
+        tone="primary"
+        onCancel={() => setConfirmStart(false)}
+        onConfirm={() => {
+          setConfirmStart(false);
+          router.push(nextBlock?.books ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}` : "/reading-session");
+        }}
+      />
     </View>
   );
 }

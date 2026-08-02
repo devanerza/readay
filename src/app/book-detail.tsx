@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
 import { BookDetailSkeleton } from "../components/SkeletonScreens";
+import ConfirmModal from "../components/ConfirmModal";
 import Toast from "../components/Toast";
 import Icon from "../components/Icon";
 
@@ -24,6 +25,7 @@ export default function BookDetail() {
   const queryClient = useQueryClient();
   const [adding, setAdding] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
+  const [confirmStart, setConfirmStart] = React.useState(false);
 
   const { data: localBook, isLoading: localLoading } = useQuery({
     queryKey: ["local-book", book_id || open_library_id],
@@ -103,6 +105,11 @@ export default function BookDetail() {
     }
   };
 
+  const handleStartReading = () => {
+    if (!localBookId) return;
+    setConfirmStart(true);
+  };
+
   if (olLoading || localLoading) return <BookDetailSkeleton />;
 
   return (
@@ -169,14 +176,24 @@ export default function BookDetail() {
               </View>
 
               {/* CTA */}
-              <Pressable
-                onPress={handleAddToLibrary}
-                disabled={adding}
-                className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95 disabled:opacity-50"
-              >
-                <Icon name={adding ? "check" : "book_2"} size={20} color="#ffffff" filled />
-                <Text className="text-white font-label-md">{adding ? "Adding..." : "Add to Library"}</Text>
-              </Pressable>
+              {queueItem ? (
+                <Pressable
+                  onPress={handleStartReading}
+                  className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95"
+                >
+                  <Icon name="auto_stories" size={20} color="#ffffff" filled />
+                  <Text className="text-white font-label-md">Start Reading</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  onPress={handleAddToLibrary}
+                  disabled={adding}
+                  className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  <Icon name={adding ? "check" : "book_2"} size={20} color="#ffffff" filled />
+                  <Text className="text-white font-label-md">{adding ? "Adding..." : "Add to Library"}</Text>
+                </Pressable>
+              )}
             </View>
           </View>
 
@@ -227,6 +244,20 @@ export default function BookDetail() {
       </SafeAreaView>
 
       <Toast message={toast} onDismiss={() => setToast(null)} />
+
+      <ConfirmModal
+        visible={confirmStart}
+        title="Start reading session?"
+        message={`Start "${detail?.title ?? "this book"}"?`}
+        confirmLabel="Start"
+        icon="auto_stories"
+        tone="primary"
+        onCancel={() => setConfirmStart(false)}
+        onConfirm={() => {
+          setConfirmStart(false);
+          router.push(`/reading-session?book_id=${localBookId}`);
+        }}
+      />
     </View>
   );
 }
