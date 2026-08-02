@@ -140,7 +140,7 @@ export default function Home() {
               >
                 <View className="rounded-[24px] overflow-hidden">
                   {nextBlock.books?.cover_url ? (
-                    <ImageBackground source={{ uri: nextBlock.books.cover_url }} className="w-full h-[420px]">
+                    <ImageBackground source={{ uri: nextBlock.books.cover_url }} className="w-full h-[440px]">
                       <View className="flex-1 relative">
                         <View className="absolute inset-0 bg-black/50" />
                         <View className="flex-1 justify-between p-6">

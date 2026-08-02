@@ -20,7 +20,7 @@ const TABS: { name: string; label: string; icon: any }[] = [
 function CustomTabBar({ state, navigation }: any) {
   return (
     <View
-      className="absolute bottom-0 left-0 w-full flex-row justify-around items-center px-0 pb-6 pt-3 bg-primary rounded-t-xl"
+      className="absolute bottom-0 left-0 w-full h-20 flex-row justify-around items-center px-3 pb-6 pt-3 bg-primary rounded-t-xl"
       style={{
         shadowColor: "#2d2d2d",
         shadowOffset: { width: 0, height: -4 },
@@ -55,7 +55,7 @@ function CustomTabBar({ state, navigation }: any) {
                 : "flex-col items-center justify-center px-5 py-1.5 active:bg-white/15 active:rounded-full"
             }
           >
-            <Icon name={tab.icon} size={22} color={focused ? "#ffffff" : "rgba(255,255,255,0.72)"} filled={focused} />
+            <Icon name={tab.icon} size={18} color={focused ? "#ffffff" : "rgba(255,255,255,0.72)"} filled={focused} />
             <View className="mt-1">
               <TabLabel label={tab.label} focused={focused} />
             </View>
@@ -68,7 +68,7 @@ function CustomTabBar({ state, navigation }: any) {
 
 function TabLabel({ label, focused }: { label: string; focused: boolean }) {
   return (
-    <Text className={`font-label-md text-[11px] ${focused ? "text-white" : "text-white/70"}`}>
+    <Text className={`font-display text-sm ${focused ? "text-white" : "text-white/70"}`}>
       {label}
     </Text>
   );

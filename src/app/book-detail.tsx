@@ -138,7 +138,7 @@ export default function BookDetail() {
         >
           {/* Hero */}
           <View className="px-margin-page pt-4 items-center">
-            <View className="w-full max-w-[280px] aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
+            <View className="w-full h-[440] aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
               {displayCover ? (
                 <Image source={{ uri: displayCover }} className="w-full h-full" resizeMode="cover" />
               ) : (
@@ -148,24 +148,25 @@ export default function BookDetail() {
               )}
             </View>
 
-            <View className="items-center pt-4 w-full">
+            <Text className="font-display text-[26px] text-on-surface text-center pt-4">{detail?.title ?? "Unknown Book"}</Text>
+            {displayAuthor ? (
+              <Text className="font-body-md text-on-surface-variant italic mb-4">{displayAuthor}</Text>
+            ) : null}
+
+            <View className="items-center pt-1 w-full">
               {genreTags.length > 0 && (
                 <View className="flex-row flex-wrap justify-center gap-2 mb-3">
                   {genreTags.map((tag) => (
                     <View key={tag} className="bg-tertiary-container/10 px-3 py-1 rounded-full">
-                      <Text className="font-label-md text-on-tertiary-container">{tag}</Text>
+                      <Text className="font-label text-sm text-on-tertiary-container">{tag}</Text>
                     </View>
                   ))}
                 </View>
               )}
-              <Text className="font-headline-lg-mobile text-on-surface text-center mb-1">{detail?.title ?? "Unknown Book"}</Text>
-              {displayAuthor ? (
-                <Text className="font-body-md text-on-surface-variant italic mb-4">{displayAuthor}</Text>
-              ) : null}
 
               {/* Stats */}
               <View className="flex-row gap-4 w-full mb-6">
-                <View className="flex-1 bg-surface-container-low p-4 rounded-xl">
+                <View className="flex-1 bg-surface-container-low p-4 py-2 rounded-xl">
                   <Text className="text-caption text-outline uppercase tracking-wider mb-1">Pages</Text>
                   <View className="flex-row items-center gap-2">
                     <Icon name="auto_stories" size={18} color="#52634c" />
@@ -174,7 +175,7 @@ export default function BookDetail() {
                     </Text>
                   </View>
                 </View>
-                <View className="flex-1 bg-surface-container-low p-4 rounded-xl">
+                <View className="flex-1 bg-surface-container-low p-4 py-2 rounded-xl">
                   <Text className="text-caption text-outline uppercase tracking-wider mb-1">Released</Text>
                   <View className="flex-row items-center gap-2">
                     <Icon name="calendar_month" size={18} color="#52634c" />
@@ -210,7 +211,7 @@ export default function BookDetail() {
             <View className="px-margin-page mt-8">
               <View className="flex-row items-center gap-3 mb-4">
                 <View className="w-10 h-10 rounded-full bg-secondary-container items-center justify-center">
-                  <Icon name="favorite" size={18} color="#7a532a" />
+                  <Icon name="info" size={18} color="#7a532a" />
                 </View>
                 <Text className="font-headline-md text-on-surface">About this book</Text>
               </View>
