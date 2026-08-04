@@ -76,7 +76,7 @@ export default function Library() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           title="Library"
-          rightActions={[{ icon: "settings", color: "#444841" }]}
+          rightActions={[{ icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) }]}
         />
 
         <TabSwitcher

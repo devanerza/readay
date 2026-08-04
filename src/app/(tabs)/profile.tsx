@@ -141,7 +141,7 @@ export default function Profile() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
         title="Profile"
-        rightActions={[{ icon: "settings", color: "#444841" }]} />
+        rightActions={[{ icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) }]} />
 
         <ScrollView
           className="flex-1 px-margin-page"

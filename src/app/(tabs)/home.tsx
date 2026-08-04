@@ -106,7 +106,7 @@ export default function Home() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           rightActions={[
-            { icon: "settings", color: "#444841" },
+            { icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) },
           ]}
         />
 

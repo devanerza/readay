@@ -15,7 +15,7 @@ type Props = {
   rightSlot?: React.ReactNode;
 };
 
-export default function TopAppBar({ title = "ReadFlow", onBack, rightActions, rightSlot }: Props) {
+export default function TopAppBar({ title = "Readay", onBack, rightActions, rightSlot }: Props) {
   return (
     <View className="w-full flex-row justify-between items-center px-margin-page py-4">
       <View className="flex-row items-center gap-4">
