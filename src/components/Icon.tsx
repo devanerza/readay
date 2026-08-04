@@ -39,6 +39,8 @@ const ICON_MAP: Record<string, keyof typeof MaterialIcons.glyphMap> = {
   add_circle: "add-circle",
   remove_red_eye: "remove-red-eye",
   list_alt: "list-alt",
+  info: "info-outline",
+  logout: "logout",
 };
 
 export type IconName = keyof typeof ICON_MAP;
