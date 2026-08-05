@@ -7,16 +7,17 @@ import { supabase } from "../lib/supabase";
 import Icon from "../components/Icon";
 
 const GENRES = [
-  "Mystery", "Fantasy", "Romance", "Sci-Fi", "Biography",
-  "History", "Philosophy", "Poetry", "Classic Lit", "Contemporary",
+  "Mystery", "Thriller", "Fantasy", "Sci-Fi", "Horror", "Romance",
+  "Historical Fiction", "Literary Fiction", "Contemporary", "Classic Lit",
+  "Poetry", "Drama", "Short Stories", "Young Adult", "Adventure", "Graphic Novel",
+  "Biography", "Memoir", "History", "Philosophy", "Psychology", "Self-Help",
+  "True Crime", "Business", "Science", "Politics", "Travel", "Food & Cooking",
 ];
 
 type FormData = {
   displayName: string;
   favoriteGenres: string[];
   yearlyGoal: string;
-  sessionMinutes: string;
-  formatPreference: string;
 };
 
 export default function OnboardingScreen() {
@@ -48,8 +49,6 @@ export default function OnboardingScreen() {
       display_name: data.displayName.trim(),
       genre_weights,
       yearly_goal: parseInt(data.yearlyGoal, 10),
-      preferred_session_minutes: parseInt(data.sessionMinutes, 10),
-      format_preference: data.formatPreference,
     }, { onConflict: 'user_id' });
 
     if (!error) router.replace("/home");
@@ -129,53 +128,6 @@ export default function OnboardingScreen() {
                     onBlur={onBlur}
                     keyboardType="number-pad"
                   />
-                </View>
-              )}
-            />
-          </View>
-
-          <View className="gap-4">
-            <Text className="font-title-lg text-on-surface">Preferred Session Length</Text>
-            <Controller
-              control={control}
-              name="sessionMinutes"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <View className="bg-surface-container-low rounded-xl px-4 py-3">
-                  <TextInput
-                    className="font-body-md text-on-surface"
-                    placeholder="Minutes per session"
-                    placeholderTextColor="#747870"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    keyboardType="number-pad"
-                  />
-                </View>
-              )}
-            />
-          </View>
-
-          <View className="gap-4">
-            <Text className="font-title-lg text-on-surface">Preferred Format</Text>
-            <Controller
-              control={control}
-              name="formatPreference"
-              render={({ field: { onChange, value } }) => (
-                <View className="flex-row gap-3">
-                  {["physical", "ebook", "audiobook"].map((fmt) => {
-                    const active = value === fmt;
-                    return (
-                      <Pressable
-                        key={fmt}
-                        onPress={() => onChange(fmt)}
-                        className={`flex-1 py-3 rounded-xl items-center ${active ? "bg-primary" : "bg-surface-variant"}`}
-                      >
-                        <Text className={`font-label-md ${active ? "text-on-primary" : "text-on-surface-variant"}`}>
-                          {fmt.charAt(0).toUpperCase() + fmt.slice(1)}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
                 </View>
               )}
             />
