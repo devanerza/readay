@@ -22,7 +22,7 @@ type FormData = {
 export default function OnboardingScreen() {
   const router = useRouter();
   const { control, handleSubmit, watch, setValue } = useForm<FormData>({
-    defaultValues: { displayName: "", favoriteGenres: [], yearlyGoal: "12", sessionMinutes: "20", formatPreference: "physical" },
+    defaultValues: { displayName: "", favoriteGenres: [], yearlyGoal: "12" },
   });
 
   const selectedGenres = watch("favoriteGenres");

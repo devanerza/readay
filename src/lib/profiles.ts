@@ -4,7 +4,6 @@ export type Profile = {
   user_id: string;
   display_name: string;
   genre_weights: Record<string, number>;
-  preferred_session_minutes: number;
   yearly_goal: number;
   format_preference: string;
 };
@@ -12,7 +11,6 @@ export type Profile = {
 export type OnboardingData = {
   display_name: string;
   genre_weights: Record<string, number>;
-  preferred_session_minutes: number;
   yearly_goal: number;
   format_preference: string;
 };
