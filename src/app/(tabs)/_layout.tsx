@@ -95,7 +95,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{ headerShown: false, lazy: true }}
+      screenOptions={{ headerShown: false, lazy: false }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home" />
