@@ -72,7 +72,7 @@ export default function OnboardingScreen() {
           </View>
 
           <View className="gap-4">
-            <Text className="font-title-lg text-on-surface">Your Name</Text>
+            <Text className="font-title-lg text-on-surface">How should we call you?</Text>
             <Controller
               control={control}
               name="displayName"
@@ -80,7 +80,7 @@ export default function OnboardingScreen() {
                 <View className="bg-surface-container-low rounded-xl px-4 py-3">
                   <TextInput
                     className="font-body-md text-on-surface"
-                    placeholder="How should we call you?"
+                    placeholder="e.g. John Doe"
                     placeholderTextColor="#747870"
                     value={value}
                     onChangeText={onChange}
@@ -93,7 +93,7 @@ export default function OnboardingScreen() {
           </View>
 
           <View className="gap-4">
-            <Text className="font-title-lg text-on-surface">Favorite Genres</Text>
+            <Text className="font-title-lg text-on-surface">What are your favorite genres</Text>
             <View className="flex-row flex-wrap gap-2">
               {GENRES.map((genre) => {
                 const active = selectedGenres.includes(genre);
@@ -113,7 +113,7 @@ export default function OnboardingScreen() {
           </View>
 
           <View className="gap-4">
-            <Text className="font-title-lg text-on-surface">Reading Goal</Text>
+            <Text className="font-title-lg text-on-surface">How many books you want to read in 1 year?</Text>
             <Controller
               control={control}
               name="yearlyGoal"
