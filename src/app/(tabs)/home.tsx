@@ -105,7 +105,7 @@ export default function Home() {
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
-          logo={require("../../../assets/images/readay-full-lockup.png")}
+          logo={require("../../../assets/images/readay-header.png")}
           rightActions={[
             { icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) },
           ]}

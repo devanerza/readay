@@ -26,7 +26,7 @@ export default function TopAppBar({ title = "Readay", logo, onBack, rightActions
           </Pressable>
         )}
         {logo ? (
-          <Image source={logo} className="max-h-6 ml-2" resizeMode="contain" style={{ aspectRatio: 1864 / 628 }} />
+          <Image source={logo} resizeMode="contain" style={{ width: 72, height: 24, marginLeft: 8 }} />
         ) : (
           <Text className="font-display text-headline-md text-primary ml-2">{title}</Text>
         )}
