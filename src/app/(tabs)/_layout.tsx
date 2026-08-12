@@ -2,13 +2,9 @@ import React, { useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Tabs, useRouter } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { enableScreens, enableFreeze } from "react-native-screens";
 import Icon from "../../components/Icon";
 import { useAuthStore } from "../../stores/auth-store";
 import { prefetchTabs } from "../../lib/tab-prefetch";
-
-enableScreens(true);
-enableFreeze(true);
 
 const TABS: { name: string; label: string; icon: any }[] = [
   { name: "home", label: "Home", icon: "auto_stories" },
@@ -95,7 +91,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{ headerShown: false, lazy: false }}
+      screenOptions={{ headerShown: false, lazy: true }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home" />

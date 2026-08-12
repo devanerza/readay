@@ -2,6 +2,7 @@ import "../global.css";
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { enableScreens, enableFreeze } from "react-native-screens";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   useFonts,
@@ -18,6 +19,9 @@ import {
 
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth-store";
+
+enableScreens(true);
+enableFreeze(true);
 
 const queryClient = new QueryClient({
   defaultOptions: {
