@@ -11,7 +11,6 @@ import TabSwitcher from "../../components/TabSwitcher";
 import EmptyState from "../../components/EmptyState";
 import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import ConfirmModal from "../../components/ConfirmModal";
-import Icon from "../../components/Icon";
 
 const TABS = [
   { key: "want_to_read", label: "Want to Read" },
@@ -31,7 +30,7 @@ export default function Library() {
 
   const { data: items, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["queue-items", userId, activeTab],
-    queryFn: () => getQueueItems(userId!, activeTab === "want_to_read" ? undefined : activeTab),
+    queryFn: () => getQueueItems(userId!, activeTab),
     enabled: !!userId,
   });
 
@@ -46,6 +45,8 @@ export default function Library() {
       queryClient.invalidateQueries({ queryKey: ["finished-books", userId] });
       queryClient.invalidateQueries({ queryKey: ["currently-reading", userId] });
       queryClient.invalidateQueries({ queryKey: ["next-read", userId] });
+      queryClient.invalidateQueries({ queryKey: ["all-reading", userId] });
+      queryClient.invalidateQueries({ queryKey: ["want-to-read", userId] });
       if (variables.status === 'reading') {
         const item = filteredItems.find((i) => i.id === variables.id);
         if (item) router.push(`/reading-session?book_id=${item.book_id}`);
@@ -59,6 +60,9 @@ export default function Library() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["queue-items", userId] });
       queryClient.invalidateQueries({ queryKey: ["queue-count", userId] });
+      queryClient.invalidateQueries({ queryKey: ["all-reading", userId] });
+      queryClient.invalidateQueries({ queryKey: ["want-to-read", userId] });
+      queryClient.invalidateQueries({ queryKey: ["finished-books", userId] });
     },
     onError: () => Alert.alert("Error", "Could not remove book."),
   });
