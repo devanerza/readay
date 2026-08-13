@@ -105,7 +105,7 @@ function generateId(): string {
 
 export async function createReadingSession(session: {
   user_id: string;
-  book_id: string;
+  book_id: string | null;
   duration_seconds: number;
   pages_read: number;
   target_minutes?: number;
