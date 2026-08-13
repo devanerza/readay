@@ -27,24 +27,22 @@ export default function ReadingSession() {
   const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
   const [pageInput, setPageInput] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const endedRef = useRef(false);
-  const endSessionRef = useRef<() => void>(() => {});
-  const [targetReached, setTargetReached] = useState(false);
 
   const { data: book, isLoading } = useQuery({
     queryKey: ["session-book", book_id],
     queryFn: () => getBook(book_id!),
-    enabled: !!book_id && book_id !== 'unknown',
+    enabled: !!book_id,
   });
 
   const { data: currentPage = 0 } = useQuery({
     queryKey: ["current-page", book_id, userId],
     queryFn: () => getCurrentPage(book_id!, userId!),
-    enabled: !!book_id && !!userId && book_id !== 'unknown',
+    enabled: !!book_id && !!userId,
   });
 
   const elapsedSeconds = seconds;
   const targetSeconds = targetMinutes ? targetMinutes * 60 : null;
+  const targetReached = !!targetSeconds && elapsedSeconds >= targetSeconds;
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -58,12 +56,6 @@ export default function ReadingSession() {
     };
   }, [isPaused]);
 
-  useEffect(() => {
-    if (targetSeconds && elapsedSeconds >= targetSeconds && !targetReached) {
-      setTargetReached(true);
-    }
-  }, [elapsedSeconds, targetSeconds, targetReached]);
-
   const handleEndSession = async () => {
     if (!userId) return;
     if (elapsedSeconds < 10) { router.back(); return; }
@@ -72,7 +64,7 @@ export default function ReadingSession() {
     try {
       const id = await createReadingSession({
         user_id: userId,
-        book_id: book_id ?? 'unknown',
+        book_id: book_id ?? null,
         duration_seconds: elapsedSeconds,
         target_minutes: targetMinutes ?? undefined,
         pages_read: 0,
@@ -88,10 +80,13 @@ export default function ReadingSession() {
     }
   };
 
-  endSessionRef.current = handleEndSession;
-
   const handleSummaryDone = () => {
     setShowSummary(false);
+    if (!book_id) {
+      queryClient.invalidateQueries({ queryKey: ["reading-stats", userId] });
+      router.back();
+      return;
+    }
     setPageInput(currentPage > 0 ? String(currentPage) : "");
     setShowPageInput(true);
   };
