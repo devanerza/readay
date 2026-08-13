@@ -29,6 +29,15 @@ export async function getBook(bookId: string): Promise<Book | null> {
   return data;
 }
 
+// export async function getBookPageCount(bookId: string): Promise<{page_count: number} | null> {
+//   const { data } = await supabase 
+//     .from('books')
+//     .select('page_count')
+//     .eq('id', bookId)
+//     .single();
+//   return data
+// }
+
 export async function getBookByOlId(olId: string): Promise<Book | null> {
   const { data } = await supabase
     .from('books')

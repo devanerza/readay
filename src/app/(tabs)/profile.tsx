@@ -130,12 +130,6 @@ export default function Profile() {
             <Text className="font-display text-[30px] leading-[40px] text-on-surface text-center">
               {`\u201C${getSeasonMantra()}, ${profile?.display_name ?? " "}\u201D`}
             </Text>
-            {/* <View className="flex-row items-center gap-2">
-              <View className="h-px w-6 bg-outline/30" />
-              <Text className="font-title-lg text-on-surface-variant">{profile?.display_name ?? "Reader"}</Text>
-              <View className="h-px w-6 bg-outline/30" />
-            </View>
-            <Text className="font-body-md text-primary">{getSeasonMantra()}</Text> */}
           </View>
 
           {/* Reading Goal */}

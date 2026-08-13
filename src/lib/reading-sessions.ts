@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { startOfWeek, startOfYear, eachDayOfInterval, subDays } from 'date-fns';
+import { startOfWeek, subDays } from 'date-fns';
 
 export type ReadingSession = {
   id: string;
@@ -48,11 +48,21 @@ export async function getReadingStats(userId: string): Promise<ReadingStats> {
     else break;
   }
 
-  const { count: booksCompleted } = await supabase
+  const { data: completionRows } = await supabase
     .from('reading_sessions')
-    .select('book_id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('pages_read', 1);
+    .select('book_id, pages_read, books(page_count)')
+    .eq('user_id', userId);
+
+  const pagesByBook = new Map<string, { read: number; total: number | null }>();
+  for (const row of completionRows ?? []) {
+    const entry = pagesByBook.get(row.book_id) ?? { read: 0, total: row.books?.[0]?.page_count ?? null };
+    entry.read += row.pages_read ?? 0;
+    pagesByBook.set(row.book_id, entry);
+  }
+
+  const booksCompleted = [...pagesByBook.values()].filter(
+    (e) => e.total != null && e.total > 0 && e.read >= e.total
+  ).length;
 
   return {
     totalMinutes,
@@ -60,7 +70,7 @@ export async function getReadingStats(userId: string): Promise<ReadingStats> {
     sessionsCount: sessions.length,
     thisWeekMinutes,
     streakDays: streak,
-    booksCompleted: booksCompleted ?? 0,
+    booksCompleted,
   };
 }
 
