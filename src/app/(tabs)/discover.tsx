@@ -81,7 +81,7 @@ export default function Discover() {
   const { data: favoriteResults, isLoading: favoriteLoading, refetch: refetchFavorites, isRefetching: refetchingFavorites } = useQuery({
     queryKey: ["ol-favorites", topGenre],
     queryFn: () => getBooksBySubject(topGenre, 20),
-    enabled: !debouncedQuery && !!topGenre,
+    enabled: !debouncedQuery && !!topGenre && activeGenre === "All Curated",
   });
 
   const refreshing =
@@ -94,7 +94,7 @@ export default function Discover() {
 
   const displayDocs = (debouncedQuery ? searchResults : subjectResults) ?? [];
   const perfectDocs = subjectResults?.slice(0, 2) ?? [];
-  const favoriteDocs = favoriteResults?.slice(0, 4) ?? [];
+  const favoriteDocs = favoriteResults?.slice(0, 8) ?? [];
 
   return (
     <View className="flex-1 bg-background">
@@ -127,34 +127,97 @@ export default function Discover() {
           </View>
 
           {/* Genre Chips */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-            {GENRES.map((g) => {
-              const active = activeGenre === g.label;
-              return (
-                <Pressable
-                  key={g.label}
-                  onPress={() => setActiveGenre(g.label)}
-                  className={active ? "px-6 py-2 rounded-full bg-primary" : "px-6 py-2 rounded-full bg-surface-variant"}
-                >
-                  <Text className={active ? "font-label-md text-on-primary" : "font-label-md text-on-surface-variant"}>
-                    {g.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {searching && debouncedQuery ? (
-            <View className="gap-y-6 pt-4">
-              {[1, 2, 3, 4].map((i) => (
-                <View key={i} className="w-full gap-2">
-                  <SkeletonBlock className="w-full aspect-[3/4] rounded-lg" />
-                  <SkeletonBlock className="w-full h-4" />
-                  <SkeletonBlock className="w-2/3 h-3" />
-                </View>
-              ))}
+          {debouncedQuery ? (
+            <View className="h-11">
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator={false}
+                style={{ flexGrow: 0 }}
+                contentContainerStyle={{ gap: 12, alignItems: "center" }}
+              >
+                {GENRES.map((g) => {
+                  const active = activeGenre === g.label;
+                  return (
+                    <Pressable
+                      key={g.label}
+                      onPress={() => setActiveGenre(g.label)}
+                      className={active ? "px-6 py-2 rounded-full bg-primary" : "px-6 py-2 rounded-full bg-surface-variant"}
+                    >
+                      <Text className={active ? "font-label-md text-on-primary" : "font-label-md text-on-surface-variant"}>
+                        {g.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
-          ) : displayDocs.length === 0 && !debouncedQuery ? (
+          ) : (
+            <View className="flex-row flex-wrap gap-2">
+              {GENRES.map((g) => {
+                const active = activeGenre === g.label;
+                return (
+                  <Pressable
+                    key={g.label}
+                    onPress={() => setActiveGenre(g.label)}
+                    className={active ? "px-6 py-2 rounded-full bg-primary" : "px-6 py-2 rounded-full bg-surface-variant"}
+                  >
+                    <Text className={active ? "font-label-md text-on-primary" : "font-label-md text-on-surface-variant"}>
+                      {g.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {debouncedQuery ? (
+            searching ? (
+              <View className="gap-y-6 pt-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <View key={i} className="w-full gap-2">
+                    <SkeletonBlock className="w-full aspect-[3/4] rounded-lg" />
+                    <SkeletonBlock className="w-full h-4" />
+                    <SkeletonBlock className="w-2/3 h-3" />
+                  </View>
+                ))}
+              </View>
+            ) : displayDocs.length > 0 ? (
+              <View className="gap-4">
+                <Text className="font-headline-lg-mobile text-on-surface">
+                  Results for "{debouncedQuery}"
+                </Text>
+                <View className="gap-y-6">
+                  {displayDocs.map((doc) => {
+                    const d = olToDisplay(doc);
+                    return (
+                      <Pressable
+                        key={d.key}
+                        className="w-full"
+                        onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                      >
+                        <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
+                          {d.cover_url ? (
+                            <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                          ) : (
+                            <View className="flex-1 items-center justify-center">
+                              <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
+                        <Text className="text-caption text-outline">{d.author}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ) : (
+              <View className="gap-2 pt-4 items-center">
+                <Text className="font-body-md text-on-surface-variant">No results for "{debouncedQuery}"</Text>
+              </View>
+            )
+          ) : activeGenre === "All Curated" ? (
             <>
               {/* Perfect for Tonight */}
               {subjectLoading && (
@@ -205,16 +268,21 @@ export default function Discover() {
               {!favoriteLoading && favoriteDocs.length > 0 && (
                 <View className="gap-4">
                   <Text className="font-headline-lg-mobile text-on-surface">Based on Your Favorites</Text>
-                  <View className="gap-y-6">
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ gap: 16 }}
+                  >
                     {favoriteDocs.map((doc) => {
                       const d = olToDisplay(doc);
                       return (
                         <Pressable
                           key={d.key}
-                          className="w-full h-full"
+                          className="w-[140px]"
                           onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
                         >
-                          <View className="aspect-[3/4] w-full h-full rounded-lg overflow-hidden bg-surface-variant">
+                          <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                             {d.cover_url ? (
                               <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
                             ) : (
@@ -224,48 +292,42 @@ export default function Discover() {
                             )}
                           </View>
                           <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
-                          <Text className="text-caption text-outline">{d.author}</Text>
+                          <Text className="text-caption text-outline" numberOfLines={1}>{d.author}</Text>
                         </Pressable>
                       );
                     })}
-                  </View>
+                  </ScrollView>
                 </View>
               )}
             </>
           ) : (
-            <>
-              {displayDocs.length > 0 && (
-                <View className="gap-4">
-                  <Text className="font-headline-lg-mobile text-on-surface">
-                    {debouncedQuery ? `Results for "${debouncedQuery}"` : `${activeGenre} Books`}
-                  </Text>
-                  <View className="gap-y-6">
-                    {displayDocs.map((doc) => {
-                      const d = olToDisplay(doc);
-                      return (
-                        <Pressable
-                          key={d.key}
-                          className="w-full"
-                          onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
-                        >
-                          <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
-                            {d.cover_url ? (
-                              <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
-                            ) : (
-                              <View className="flex-1 items-center justify-center">
-                                <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
-                              </View>
-                            )}
+            <View className="gap-4">
+              <Text className="font-headline-lg-mobile text-on-surface">{activeGenre} Books</Text>
+              <View className="gap-y-6">
+                {displayDocs.map((doc) => {
+                  const d = olToDisplay(doc);
+                  return (
+                    <Pressable
+                      key={d.key}
+                      className="w-full"
+                      onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                    >
+                      <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
+                        {d.cover_url ? (
+                          <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        ) : (
+                          <View className="flex-1 items-center justify-center">
+                            <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
                           </View>
-                          <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
-                          <Text className="text-caption text-outline">{d.author}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
-            </>
+                        )}
+                      </View>
+                      <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
+                      <Text className="text-caption text-outline">{d.author}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           )}
         </ScrollView>
       </SafeAreaView>
@@ -292,17 +354,12 @@ function FeatureCard({
         resizeMode="cover"
         style={coverUrl ? {} : { backgroundColor: "#e0e3db" }}
       >
-        <View className="p-6" style={{ backgroundColor: coverUrl ? "rgba(0,0,0,0.4)" : "transparent" }}>
+        <View className="p-6 h-full" style={{ backgroundColor: coverUrl ? "rgba(0,0,0,0.4)" : "transparent" }}>
           <Text className="font-display text-headline-lg text-white mb-1">{title}</Text>
           {author ? <Text className="font-body-md text-white/90 italic">{author}</Text> : null}
         </View>
       </ImageBackground>
-      <View className="p-6">
-        <Pressable onPress={onPress} className="py-3 bg-primary rounded-full flex-row items-center justify-center gap-2 active:scale-95">
-          <Icon name="auto_stories" size={16} color="#ffffff" />
-          <Text className="text-on-primary font-label-md">Start Journey</Text>
-        </Pressable>
-      </View>
+      
     </Pressable>
   );
 }
