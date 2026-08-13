@@ -157,7 +157,7 @@ export default function Home() {
         >
           {/* Friendly Greeting */}
           <View className="mt-2">
-            <Text className="font-display text-[40px] leading-[46px] text-on-surface">
+            <Text className="font-display text-[30px] leading-[46px] text-on-surface">
               {greeting}, <Text className="font-display">{profile?.display_name ?? "Reader"}</Text>
             </Text>
             <Text className="text-on-surface-variant mt-2 font-body-lg">
@@ -277,15 +277,15 @@ export default function Home() {
           ) : (
             <Pressable
               onPress={() => router.push("/schedule" as never)}
-              className="bg-surface-container-low rounded-[24px] p-8 items-center gap-4 active:bg-surface-container border border-dashed border-outline/30"
+              className="bg-surface-container-low rounded-[24px] p-8 items-center gap-4 active:bg-surface-container"
             >
               <View className="p-3 bg-primary/10 rounded-2xl">
                 <Icon name="schedule" size={28} color="#52634c" />
               </View>
               <View className="items-center gap-1">
-                <Text className="font-title-lg text-on-surface">Set Your Reading Schedule</Text>
-                <Text className="text-on-surface-variant font-body-md text-center max-w-[260px]">
-                  Pick a time to read — we'll remind you when it's time.
+                <Text className="font-title-lg text-lg text-on-surface">Set Your Reading Schedule</Text>
+                <Text className="text-on-surface-variant text-[12px] text-center max-w-[260px]">
+                  Pick a time to read, we'll remind you when it's time.
                 </Text>
               </View>
               <Text className="text-primary font-label-lg mt-1">Create Schedule</Text>
@@ -338,7 +338,7 @@ export default function Home() {
             >
               <Icon name="auto_stories" size={40} color="#747870" />
               <Text className="font-title-lg text-on-surface text-center">Nothing being read yet</Text>
-              <Text className="font-body-md text-on-surface-variant text-center">
+              <Text className="font-body-md text-[12px] text-on-surface-variant text-center">
                 Add a book to your queue to start reading.
               </Text>
               <Text className="text-primary font-label-md mt-2">Discover books</Text>
