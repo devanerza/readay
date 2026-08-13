@@ -14,18 +14,6 @@ import StatTile from "../../components/StatTile";
 import { ProfileSkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
 import ReflectionCard from "../../components/ReflectionCard";
-import Icon, { type IconName } from "../../components/Icon";
-
-const QUOTES = [
-  "A reader lives a thousand lives before they die.",
-  "Today a reader, tomorrow a leader.",
-  "Reading is to the mind what exercise is to the body.",
-  "So many books, so little time.",
-  "The more that you read, the more things you will know.",
-  "Books are a uniquely portable magic.",
-  "Reading is an exercise in empathy.",
-  "A room without books is like a body without a soul.",
-];
 
 const seasonMantras = [
   "Spring has sprung, and so has your reading",
@@ -42,16 +30,6 @@ function getSeasonMantra(): string {
   return seasonMantras[3];
 }
 
-function getRandomQuote(): string {
-  return QUOTES[Math.floor(Math.random() * QUOTES.length)];
-}
-
-const PREFERENCES: { icon: IconName; label: string; value: string }[] = [
-  { icon: "wb_twilight", label: "Preferred Timing", value: "Evening" },
-  { icon: "mood", label: "Reading Mood", value: "Contemplative" },
-  { icon: "light_mode", label: "Theme", value: "Paper White" },
-];
-
 export default function Profile() {
   const router = useRouter();
   const session = useAuthStore((s) => s.session);
@@ -66,12 +44,6 @@ export default function Profile() {
   const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching: refetchingStats } = useQuery({
     queryKey: ["reading-stats", userId],
     queryFn: () => getReadingStats(userId!),
-    enabled: !!userId,
-  });
-
-  const { data: queueItems, refetch: refetchQueue, isRefetching: refetchingQueue } = useQuery({
-    queryKey: ["queue-count", userId],
-    queryFn: () => getQueueItems(userId!),
     enabled: !!userId,
   });
 
@@ -112,14 +84,6 @@ export default function Profile() {
     });
   }, [weekData]);
 
-  const genreEntries = useMemo(() => {
-    if (!profile?.genre_weights) return [];
-    const weights = profile.genre_weights as Record<string, number>;
-    return Object.entries(weights)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 2);
-  }, [profile]);
-
   const completionRate = stats && stats.sessionsCount > 0
     ? Math.round((stats.streakDays / Math.max(stats.sessionsCount, 14)) * 100)
     : 0;
@@ -136,11 +100,11 @@ export default function Profile() {
   const isLoading = profileLoading || statsLoading || insightLoading;
 
   const refreshing =
-    refetchingProfile || refetchingStats || refetchingQueue || refetchingWeek ||
+    refetchingProfile || refetchingStats || refetchingWeek ||
     refetchingInsight || refetchingFinished || refetchingTarget;
 
   const { refreshing: isRefreshing, onRefresh } = usePullRefresh(
-    [refetchProfile, refetchStats, refetchQueue, refetchWeek, refetchInsight, refetchFinished, refetchTarget],
+    [refetchProfile, refetchStats, refetchWeek, refetchInsight, refetchFinished, refetchTarget],
     refreshing
   );
 
@@ -164,7 +128,7 @@ export default function Profile() {
           {/* Profile Header */}
           <View className="items-center mt-8 gap-4 px-2">
             <Text className="font-display text-[30px] leading-[40px] text-on-surface text-center">
-              "{getSeasonMantra()}, {profile?.display_name ?? " "}"
+              {`\u201C${getSeasonMantra()}, ${profile?.display_name ?? " "}\u201D`}
             </Text>
             {/* <View className="flex-row items-center gap-2">
               <View className="h-px w-6 bg-outline/30" />
@@ -186,6 +150,25 @@ export default function Profile() {
             </Text>
           </View>
 
+          {/* Weekly Coach */}
+          <View className="gap-4">
+            <Text className="font-title-lg text-on-surface">Weekly Coach</Text>
+            <View className="gap-4">
+              <ReflectionCard
+                icon="auto_awesome"
+                iconBg="bg-primary-fixed"
+                iconColor="#52634c"
+                text={insight?.narrative ?? "Start a reading session to get your personalized weekly insight."}
+              />
+              <ReflectionCard
+                icon="lightbulb"
+                iconBg="bg-secondary-fixed"
+                iconColor="#7d562d"
+                text={insight?.recommendation ?? "Log your first session and check back here for tailored recommendations."}
+              />
+            </View>
+          </View>
+
           {/* Annual Journey */}
           <View className="gap-4">
             <View className="flex-row justify-between items-end">
@@ -205,26 +188,6 @@ export default function Profile() {
                 value={stats ? stats.totalPages.toLocaleString() : "—"}
                 label="Pages Turned"
               />
-            </View>
-          </View>
-
-          {/* Favorite Genres */}
-          <View className="gap-4">
-            <Text className="font-display text-title-lg">Favorite Genres</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {genreLabels.length > 0
-                ? genreLabels.map((g) => (
-                    <View key={g} className="px-4 py-1.5 rounded-full bg-primary/10">
-                      <Text className="font-label-md text-primary">
-                        {g.charAt(0).toUpperCase() + g.slice(1)}
-                      </Text>
-                    </View>
-                  ))
-                : (
-                  <Text className="font-body-md text-on-surface-variant">
-                    Add genres in onboarding to see them here.
-                  </Text>
-                )}
             </View>
           </View>
 
@@ -260,6 +223,26 @@ export default function Profile() {
             </View>
           </View>
 
+          {/* Favorite Genres */}
+          <View className="gap-4">
+            <Text className="font-display text-title-lg">Favorite Genres</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {genreLabels.length > 0
+                ? genreLabels.map((g) => (
+                    <View key={g} className="px-4 py-1.5 rounded-full bg-primary/10">
+                      <Text className="font-label-md text-primary">
+                        {g.charAt(0).toUpperCase() + g.slice(1)}
+                      </Text>
+                    </View>
+                  ))
+                : (
+                  <Text className="font-body-md text-on-surface-variant">
+                    Add genres in onboarding to see them here.
+                  </Text>
+                )}
+            </View>
+          </View>
+
           {/* Recent Finishes */}
           <View className="gap-4">
             <View className="flex-row justify-between items-center">
@@ -287,46 +270,6 @@ export default function Profile() {
                 Finished books will appear here.
               </Text>
             )}
-          </View>
-
-          {/* Evolving Tastes */}
-          <View className="gap-6 items-center">
-            <View className="gap-3 w-full">
-              <Text className="font-title-lg text-on-surface">Evolving Tastes</Text>
-              <Text className="font-body-md text-on-surface-variant">
-                {profile && genreEntries.length === 2
-                  ? `You're enjoying ${genreEntries[0][0]} and ${genreEntries[1][0]} this season.`
-                  : "Your genre preferences from onboarding will guide your recommendations."}
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {genreEntries.map(([genre, weight]) => (
-                  <View key={genre} className={`px-4 py-1.5 rounded-full ${(weight as number) > 0.5 ? "bg-primary/10" : "bg-secondary/10"}`}>
-                    <Text className={`font-label-md ${(weight as number) > 0.5 ? "text-primary" : "text-secondary"}`}>
-                      {genre.charAt(0).toUpperCase() + genre.slice(1)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          </View>
-
-          {/* Weekly Coach */}
-          <View className="gap-4">
-            <Text className="font-title-lg text-on-surface">Weekly Coach</Text>
-            <View className="gap-4">
-              <ReflectionCard
-                icon="auto_awesome"
-                iconBg="bg-primary-fixed"
-                iconColor="#52634c"
-                text={insight?.narrative ?? "Start a reading session to get your personalized weekly insight."}
-              />
-              <ReflectionCard
-                icon="lightbulb"
-                iconBg="bg-secondary-fixed"
-                iconColor="#7d562d"
-                text={insight?.recommendation ?? "Log your first session and check back here for tailored recommendations."}
-              />
-            </View>
           </View>
 
           {/* Target Performance */}
@@ -360,43 +303,6 @@ export default function Profile() {
               </View>
             </View>
           ) : null}
-
-          {/* Personal Library Link */}
-          <Pressable className="bg-surface-container-lowest border border-surface-variant/20 rounded-xl p-4 flex-row items-center justify-between active:bg-surface-container-low">
-            <View className="flex-row items-center gap-4">
-              <View className="w-12 h-12 rounded-lg bg-primary-container/20 items-center justify-center">
-                <Icon name="book_2" size={20} color="#52634c" />
-              </View>
-              <View>
-                <Text className="font-title-lg text-[18px]">Personal Library</Text>
-                <Text className="text-caption text-on-surface-variant">
-                  {queueItems?.length ?? "—"} title{(queueItems?.length ?? 0) !== 1 ? "s" : ""} collected
-                </Text>
-              </View>
-            </View>
-            <Icon name="chevron_right" size={20} color="#444841" />
-          </Pressable>
-
-          {/* Reading Preferences */}
-          <View className="gap-4">
-            <Text className="font-display text-title-lg">Reading Preferences</Text>
-            <View className="gap-1">
-              {PREFERENCES.map((pref, i) => (
-                <View
-                  key={pref.label}
-                  className={`flex-row justify-between items-center py-3 ${
-                    i < PREFERENCES.length - 1 ? "border-b border-surface-container" : ""
-                  }`}
-                >
-                  <View className="flex-row items-center gap-3">
-                    <Icon name={pref.icon} size={20} color="#444841" />
-                    <Text className="font-body-md text-on-surface">{pref.label}</Text>
-                  </View>
-                  <Text className="font-label-md text-primary">{pref.value}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
