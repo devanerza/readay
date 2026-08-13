@@ -24,16 +24,16 @@
 ## 1. Suggested Build Order
 
 ### Phase 1 — Foundations
-- [ ] Init Expo project (TypeScript template), Expo Router for navigation (check first, if done, don't touch nor change anything, just remove the default example code, page, components, etc.)
-- [ ] Install & configure: NativeWind (Tailwind for RN), Zustand, TanStack Query, React Hook Form
-- [ ] Set up Supabase client (`lib/supabase.ts`) reading URL/anon key from env — **assume Devan will supply `.env` values; agent does not create the Supabase project itself**
-- [ ] Set up i18n strings layer (even if only `en.json` exists for now) — all UI text pulled from it, never inline
-- [ ] Confirm design tokens (colors, radii, spacing, type scale) match what's coming from the web-chat-generated UI, so wiring doesn't require re-theming later
+- [x] Init Expo project (TypeScript template), Expo Router for navigation (check first, if done, don't touch nor change anything, just remove the default example code, page, components, etc.)
+- [x] Install & configure: NativeWind (Tailwind for RN), Zustand, TanStack Query, React Hook Form
+- [x] Set up Supabase client (`lib/supabase.ts`) reading URL/anon key from env — **assume Devan will supply `.env` values; agent does not create the Supabase project itself**
+- [~] Set up i18n strings layer — the layer exists at `src/i18n` (en.json + `t()`), **but no screen pulls text from it yet**; screens still hardcode strings inline. Wired usage is tracked under Phase 7.7.
+- [x] Confirm design tokens (colors, radii, spacing, type scale) match what's coming from the web-chat-generated UI, so wiring doesn't require re-theming later
 
 ### Phase 2 — Receive & Integrate Provided UI
-- [ ] Drop in UI components/screens as provided from the web chat LLM output
-- [ ] Sanity-check each file compiles cleanly in the Expo/TypeScript project (imports, types, RN-vs-web API mismatches — web-generated UI sometimes uses DOM APIs that don't exist in React Native, catch those here)
-- [ ] Treat the provided UI as source of truth for design — no comparison against PRD §7
+- [x] Drop in UI components/screens as provided from the web chat LLM output
+- [x] Sanity-check each file compiles cleanly in the Expo/TypeScript project (imports, types, RN-vs-web API mismatches — web-generated UI sometimes uses DOM APIs that don't exist in React Native, catch those here)
+- [x] Treat the provided UI as source of truth for design — no comparison against PRD §7
 
 ### Phase 3 — Auth & Onboarding (wiring)
 
@@ -49,7 +49,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 **Trigger/function points across Phase 4 (agent writes client code; Devan provisions DB-side):**
 - Genre weights auto-shift when a session is completed or abandoned (§3.1). Agent writes the client-side API call that notifies the update. Devan provisions the DB trigger or Edge Function that recalculates `profiles.genre_weights` from `reading_sessions`.
-- Profile stat tiles (reading time, pages turned, goal progress) and streak/consistency data are **computed from `reading_sessions` and `queue_items` on read** — no new table. Agent writes the query; Devan may choose to materialize via a DB function or view. **Note: the Journey screen no longer exists — its sections (Consistency Vine, Recent Finishes, Evolving Tastes, Weekly Coach, Target Performance) were merged into the Profile screen.**
+- Profile stat tiles (reading time, pages turned, goal progress) and streak/consistency data are **computed from `reading_sessions` and `queue_items` on read** — no new table. Agent writes the query; Devan may choose to materialize via a DB function or view. **Note: the Journey screen no longer exists — its sections were merged into the Profile screen, and the Profile has since been refocused. Current Profile sections: Profile Header, Reading Goal, Weekly Coach, Annual Journey (stat tiles), Consistency Vine, Favorite Genres, Recent Finishes, Target Performance. The Evolving Tastes section, Personal Library shortcut, and Reading Preferences list were dropped (and their now-unused logic removed).**
 
 1. **Profile** (§3.1 reference) — read/write `profiles`; genre weights rendered wherever the provided UI places them. Profile stat tiles (reading time, pages, goal) computed from `reading_sessions`. ✅ *Done*
 2. **Queue / Library → "Want to Read"** (§3.2) — `queue_items` lib created with full CRUD. Library screen is built (queue grouped by status, status toggles, remove modal). Home screen's "Want to Read" section is a horizontal carousel of queued items. ✅ *Done*
@@ -63,7 +63,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 ### Phase 6 — QA Pass
 - [x] Cross-check every screen against Definition of Done (§2 below)
-- [ ] Verify notifications (Expo Notifications) fire correctly for schedule reminders, and that copy matches what was provided (agent doesn't rewrite copy — flag if missing)
+- [ ] Verify notifications (Expo Notifications) fire correctly for schedule reminders, and that copy matches what was provided (agent doesn't rewrite copy — flag if missing). **Status: not started — `expo-notifications` is not yet installed and no reminder wiring exists in the Schedule/Home flow.**
 - [ ] Regression check after any Supabase schema proposal is applied by Devan
 
 ### Phase 7 — Remaining MVP Gaps
@@ -83,7 +83,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
   2. `lib/book-service.ts` — orchestrator: search OL → upsert to Supabase `books` → return local book objects (caches author + page_count)
   3. **Discover screen:** debounced search, genre-filtered browsing, "Based on Your Favorites" from `profile.genre_weights`, "Perfect for Tonight" from curated subject
   4. **Book Detail screen:** reads book from Supabase `books` table by `book_id` route param; computes progress from `reading_sessions` for this `book_id`
-  5. **Actions:** "Add to Library" → `cacheBookFromDetail()` then `addToQueue()` (book detail now has a single CTA; "Start Reading" was removed)
+  5. **Actions:** if the book is already in the queue, the primary CTA is "Start Reading" → pushes `/reading-session?book_id=...`; otherwise "Add to Library" → `cacheBookFromDetail()` then `addToQueue()`. (The header share/bookmark icons remain non-functional — flagged under 7.7.)
 - **Migration proposal (for Devan to run):**
   ```sql
   CREATE TABLE IF NOT EXISTS public.books (
@@ -126,9 +126,11 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
   - Invalidate when new sessions are logged
 
 #### 7.7 — Foundational Layer Cleanup
-- **i18n/strings layer (AGENTS #5):** Create `lib/strings/en.json` with all UI copy. Refactor every screen to pull strings from the layer. Enables Bahasa Indonesia fast-follow (PRD §10.2).
-- **Error handling:** Add Toast/Alert to all async Supabase operations. Show retry buttons on query failures.
-- **Hardcoded items on Profile:** Preferences section (and avatar, if re-added) need a schema/storage solution (post-MVP). For MVP, link avatar to Gravatar by email or supabase auth avatar.
+- **i18n/strings layer (AGENTS #5):** The layer exists at `src/i18n` (en.json + `t()`), **but no screen consumes it** — all UI copy is still hardcoded inline. Refactor every screen to pull strings from the layer. Enables Bahasa Indonesia fast-follow (PRD §10.2).
+- **Error handling:** Mixed today — `book-detail` uses the `Toast` component; `library`/`schedule` use `Alert`. Standardize on one pattern for async Supabase failures and add retry-on-error where queries can fail.
+- **Static/hardcoded data:** `settings.tsx` renders static preference rows ("Schedule reminders: On", "Theme: Paper White") with no wiring — tie to real state or remove. `book-detail.tsx` header shows non-functional share/bookmark icons.
+- **Dead code to sweep (defined but unused):** `createProfile`/`updateProfile` in `profiles.ts` (onboarding writes via `supabase` directly), `getUpcomingBlock` in `schedule-blocks.ts` (Home computes the next block locally), `getNextRead`/`getCurrentlyReading` in `queue-items.ts` (Home uses `getAllCurrentlyReading`), and `cacheBookFromSearch` in `book-service.ts`. Remove or wire as appropriate.
+- **Hardcoded items that were on Profile:** moot now — the **Reading Preferences** list, **Personal Library** shortcut, **Evolving Tastes**, and their queries were removed with the Profile refocus. Settings holds the remaining preference rows.
 
 ---
 
@@ -138,19 +140,21 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 #### 8.1 — Wire Reading Session to Real Book Data
 - **Why:** `reading-session.tsx` used hardcoded mock data (book cover, avatar, Cicero quote). Now fixed: reads `book_id` from params, fetches real cover/title/author from the `books` table, and runs as a **stopwatch** (no countdown). ✅ *Done*
-- **Remaining:** the stopwatch accepts an optional `target_minutes` param (passed from schedule blocks) — displayed as a progress reference and stored on the session row for target-performance analytics (shown in Profile). Post-session flow: summary modal (actual vs. target) → page-input modal → saves pages.
+- **Also done:** the stopwatch accepts an optional `target_minutes` param (passed from schedule blocks) — displayed as a progress reference and stored on the session row for target-performance analytics (shown in Profile). Post-session flow: summary modal (actual vs. target) → page-input modal → saves pages. All implemented in `reading-session.tsx`. ✅ *Done*
 
 #### 8.2 — Library "Start Reading" Redirects to Reading Session
 - **Why:** The Library screen's "Start Reading" button (on the "Want to Read" tab) only toggles the queue item status to `reading` but does NOT navigate to the reading session screen. Users must manually find and tap the book again.
 - **What to fix:**
   1. After `statusMutation` succeeds for `want_to_read → reading`, call `router.push(\`/reading-session?book_id=${item.book_id}\`)` so the user lands directly in the session
   2. Use `onSuccess` of the mutation to navigate (after cache invalidation)
+- **Status:** ✅ *Done* — `library.tsx` navigates via `statusMutation.onSuccess` after cache invalidation.
 
 #### 8.3 — Library "Start Reading" Also in Reading Tab
 - **Why:** The Reading tab shows books with status `reading` but no way to resume. Add a "Resume" button that also navigates to the reading session.
 - **What to fix:**
   1. In the Reading tab's action row, if status is `reading`, show a "Resume" button instead of "Start Reading"
   2. Both "Start Reading" (Want to Read) and "Resume" (Reading) navigate to the session
+- **Status:** ✅ *Done* — the Reading tab renders a "Resume" button that pushes `/reading-session?book_id=...`.
 
 ---
 
@@ -165,6 +169,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
   2. Replace the single hero card with a horizontal `ScrollView` carousel
   3. Each card shows cover, title, author, and "Resume" button
   4. When queue is empty, show the existing empty state CTA
+- **Status:** ✅ *Done* — `home.tsx` uses `getAllCurrentlyReading` and renders a horizontal carousel; empty state links to Discover.
 
 ---
 
@@ -180,6 +185,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
   3. Add a simple list of all blocks (flat, no day grid) below Today's section
   4. Keep the "Add Block" button in the header and inline "+ Add block" CTAs
   5. Keep the form for creating/editing blocks
+- **Status:** ✅ *Done* — `schedule.tsx` shows only "Today's Blocks" and a flat "All Blocks" list (no 7-day grid).
 
 ---
 

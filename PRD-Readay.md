@@ -30,7 +30,7 @@ Help readers finish more books they actually enjoy.
 **Not the goal (for MVP):**
 - Largest book catalog
 - Biggest social network
-- A full analytics dashboard as the app's identity (light, editorially-styled stats within Journey/Profile are fine — see §7.3 — but the app should not read as a stats tool)
+- A full analytics dashboard as the app's identity (light, editorially-styled stats within Profile are fine — see §7.3 — but the app should not read as a stats tool)
 
 **One-line success test:** *"Open the app and it tells me what to read, when to read, and whether my reading habit is improving."*
 
@@ -49,37 +49,40 @@ Help readers finish more books they actually enjoy.
 ### 3.1 Preference Profiling
 **Purpose:** Understand the reader before recommending books.
 
-- Onboarding questionnaire: favorite genres, favorite books, reading goal (books/year), preferred session duration, fiction vs. nonfiction, format preference (physical/ebook/audiobook)
-- Profile is a living object — genre weights shift automatically based on completed/abandoned sessions, not just onboarding answers
+- Onboarding questionnaire (as shipped): display name, favorite genres (multi-select), reading goal (books/year)
+- Genre weights are stored as `genre_weights` (all selected genres start at 0.8). **Auto-shift is a fast-follow, not yet implemented** — weights are currently static after onboarding (see AGENTS Phase 7.4)
+- The `profiles` table also carries `preferred_session_minutes` and `format_preference` in the reference schema, but MVP onboarding does not collect them yet
 
-**Data model sketch:**
+**Data model sketch (as implemented):**
 ```
-user_profile
+profiles
 - user_id
-- genre_weights (jsonb, e.g. {"mystery": 0.9, "fantasy": 0.7, "biography": 0.2})
-- preferred_session_minutes
+- display_name
+- genre_weights (jsonb, e.g. {"mystery": 0.8, "fantasy": 0.8})
 - yearly_goal
-- format_preference
+- (reserved: preferred_session_minutes, format_preference — not collected in MVP)
 ```
 
 ### 3.2 Personalized Reading Queue
-- Replaces search-first UX with a ranked "read next" queue
-- Each recommendation includes a short *reason* string (e.g. "Because you finish psychological thrillers quickly")
-- Queue re-ranks when a genre is abandoned repeatedly (track abandonment, not just completion)
+- The queue is a "Want to Read" list grouped by status: `want_to_read | reading | finished` (no `queued`/`abandoned` status in MVP)
+- Queue items carry an optional `reason_text` string; Discover search *and* curated genre browsing (not search-first exclusively) feed books into the queue via Add to Library
+- Queue re-ranking based on genre weights is a **fast-follow, not yet implemented** (see AGENTS Phase 7.5). Ranks are append-order today
 
 ### 3.3 Reading Schedule
-- User declares free-time blocks (day + time) during onboarding
-- App generates a weekly schedule from those blocks
-- MVP: manual declaration only. Auto-adjustment based on actual completion is a fast-follow, not MVP.
+- Users create reading blocks on the dedicated Schedule screen (not during onboarding): day, start time, duration, label, and an optional linked book from their queue
+- Home surfaces the next upcoming block as a session card and passes its duration as `target_minutes` to the reading session
+- Auto-adjustment based on actual completion is a fast-follow, not MVP
 
 ### 3.4 Reading Session Tracker
-- Deliberately minimal: Start Reading → Done → log minutes + pages
+- Deliberately minimal: a **stopwatch** (counts up, no countdown) with optional `target_minutes` shown as a progress reference and stored on the row for target-performance analytics
+- Flow: Start → End Session → summary modal (actual vs. target) → page-input modal → session row written with `duration_seconds`, `pages_read`, and `target_minutes`
 - No in-session stats, no highlights, no notes in MVP
 
 ### 3.5 Weekly Reading Coach
 - Turns raw session logs into a short narrative insight + one actionable recommendation, e.g.:
   > "You read 95 pages across 4 sessions. Mystery books kept your average session 12 minutes longer than nonfiction. Try alternating genres to maintain consistency."
 - This is a rules-based or lightweight-LLM-generated summary, not a full analytics dashboard
+- **As implemented:** rule-based template function (`lib/weekly-coach.ts`) that computes on-the-fly each Profile load — **not yet persisted** to the `weekly_insights` table (see AGENTS Phase 7.6)
 
 ---
 
@@ -96,9 +99,10 @@ Rationale: each adds complexity without strengthening the core loop above. Revis
 ## 5. User Flow
 
 ```
-Sign Up → Genre Profiling → Personalized Queue → Choose Book
-→ Set Reading Schedule → Read → Log Session → Journey Updates
-→ Recommendations Update (loops back to Queue)
+Sign Up → Genre Profiling (onboarding) → Add books to Queue (Discover)
+→ Set Reading Schedule (Schedule screen) → Read (stopwatch session)
+→ Log Session (summary + pages) → Profile Updates
+→ Recommendations Update (loops back to Queue / Discover)
 ```
 
 ---
@@ -109,12 +113,12 @@ Sign Up → Genre Profiling → Personalized Queue → Choose Book
 Home        → Continue Reading / Next Session / Want to Read / Recently Finished / Weekly Progress
 Discover    → Curated collections, genre browse, search
 Library     → Queue grouped by status (Want to Read / Reading / Finished)
-Profile     → Reading Goal / Preferences / Journey Sections
-             (Weekly Coach, Consistency, Evolving Tastes, Target Performance, Stats)
+Profile     → Reading Goal / Weekly Coach / Annual Journey (stat tiles)
+             / Consistency Vine / Favorite Genres / Recent Finishes / Target Performance
 Schedule    → Dedicated screen (not a tab): Today's Blocks / All Blocks
 ```
 
-**Status note:** the shipped UI implements four bottom-nav tabs — **Home, Discover, Library, Profile** — driven by a custom bottom bar in `(tabs)/_layout.tsx`. The former **Journey** screen was merged into **Profile**; its sections (Weekly Coach, Consistency Vine, Recent Finishes, Evolving Tastes, Target Performance) now live there. **Schedule is implemented** (see §3.3) as its own dedicated screen rather than a tab, reachable from Home; its blocks pass `target_minutes` to the reading session. **Book Detail** and **Reading Session** are pushed as stack screens, and **Auth / Sign-in / Onboarding** sit outside the tabs.
+**Status note:** the shipped UI implements four bottom-nav tabs — **Home, Discover, Library, Profile** — driven by a custom bottom bar in `(tabs)/_layout.tsx`. The former **Journey** screen was merged into **Profile**; its sections (Weekly Coach, Consistency Vine, Recent Finishes, Target Performance) plus Reading Goal, Annual Journey stat tiles, and Favorite Genres now live there. The **Evolving Tastes** section, the **Personal Library** shortcut card, and the **Reading Preferences** list were dropped from Profile in a later cleanup (their underlying data/queries were removed too where unused). **Schedule is implemented** (see §3.3) as its own dedicated screen rather than a tab, reachable from Home; its blocks pass `target_minutes` to the reading session. **Book Detail** and **Reading Session** are pushed as stack screens, and **Auth / Sign-in / Onboarding** sit outside the tabs.
 
 ---
 
@@ -189,54 +193,64 @@ Readay should read as a **premium lifestyle product for passionate readers** —
 
 profiles (
   user_id uuid primary key references auth.users,
-  genre_weights jsonb default '{}',
-  preferred_session_minutes int,
+  display_name text,
+  genre_weights jsonb default '{}',   -- all selected genres start at 0.8
   yearly_goal int,
-  format_preference text,
+  preferred_session_minutes int,       -- reserved; not collected in MVP onboarding
+  format_preference text,              -- reserved; not collected in MVP onboarding
   created_at timestamptz default now()
 )
 
 books (
   id uuid primary key default gen_random_uuid(),
-  open_library_id text,
+  open_library_id text unique,         -- upsert target for Open Library caching
   title text,
   author text,
   cover_url text,
   genres text[],
-  rating numeric,               -- avg rating shown on Book Detail
+  rating numeric,                      -- avg rating shown on Book Detail (not yet populated)
   rating_count int,
-  estimated_read_minutes int,   -- "Time to read: 4h 30m"
-  mood_tags text[],             -- e.g. ["Reflective"]
-  available_formats text[]      -- e.g. ["hardcover", "ebook", "audiobook"]
+  estimated_read_minutes int,          -- "Time to read: 4h 30m" (not yet populated)
+  mood_tags text[],                    -- e.g. ["Reflective"] (not yet populated)
+  available_formats text[],            -- e.g. ["hardcover", "ebook", "audiobook"] (not yet populated)
+  description text,
+  isbn text,
+  publisher text,
+  published_date text,
+  page_count int
 )
 
 queue_items (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users,
   book_id uuid references books,
-  reason text,
-  rank int,
-  status text default 'queued', -- queued | reading | abandoned | finished
-  current_page int,             -- persisted reading progress
-  current_chapter text,
-  selected_format text          -- format chosen when added, if applicable
+  reason_text text default '',         -- optional "why this book" string
+  rank int,                            -- append-order in MVP; re-ranking is a fast-follow
+  status text default 'want_to_read',  -- want_to_read | reading | finished
+  current_page int default 0,          -- persisted reading progress
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+  -- current_chapter / selected_format: reserved, not used in MVP
 )
 
 reading_sessions (
-  id uuid primary key default gen_random_uuid(),
+  id uuid primary key,                 -- client-generated v4 UUID
   user_id uuid references auth.users,
   book_id uuid references books,
-  started_at timestamptz,
-  duration_minutes int,
-  pages_read int
+  date timestamptz,                    -- session start, inserted as ISO string
+  duration_seconds int,                -- stopwatch elapsed time
+  pages_read int default 0,
+  target_minutes int                   -- optional, from the schedule block duration
 )
 
 schedule_blocks (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users,
-  day_of_week int, -- 0-6
-  start_time time,
-  duration_minutes int
+  day_of_week int,                     -- 0-6
+  start_time time,                     -- HH:MM
+  end_time time,                       -- derived from start_time + duration
+  label text default 'Reading Session',
+  book_id uuid references books        -- optional; nullable
 )
 
 weekly_insights (
@@ -250,9 +264,12 @@ weekly_insights (
 
 Row Level Security: intended policy shape is `user_id = auth.uid()` on every table — for Devan's own reference when configuring Supabase, not something an agent should apply.
 
-**Open schema items:**
-- **Schedule is still required** (§3.3, §6) but not yet reflected in any mockup — `schedule_blocks` stays in the schema as-is; no changes needed until that screen is designed, but don't treat its absence from the UI as a signal to drop it.
-- The Journey screen's "Consistency Vine" (streak dots, completion rate) and Profile's stat tiles (reading time, pages turned, goal progress) can all be **computed from `reading_sessions` and `queue_items`** on read — no new table needed. A daily "did the user log at least one session" boolean per day, derived on the fly or cached in `weekly_insights`, is enough to drive the dot row.
+**Schema notes (as implemented, deltas from the original design):**
+- `reading_sessions` uses `date` + `duration_seconds` + optional `target_minutes` rather than `started_at` + `duration_minutes`; the UI computes `pages_read` from a start/end current-page delta.
+- `queue_items` statuses are `want_to_read | reading | finished` (no `queued`/`abandoned`).
+- `schedule_blocks` carries `label`, `end_time` (derived), and an optional `book_id` for the Home session card.
+- `books` was extended with description/isbn/publisher/published_date/page_count to support Open Library caching (see AGENTS 7.3 migration).
+- Stat tiles, Consistency Vine dots, completion rate, and Target Performance are all **computed from `reading_sessions` / `queue_items` on read** — no extra tables. A daily "did the user log at least one session" boolean per day, derived on the fly or cached in `weekly_insights`, drives the Consistency Vine dot row.
 
 ---
 
@@ -260,7 +277,7 @@ Row Level Security: intended policy shape is `user_id = auth.uid()` on every tab
 
 - % of started books marked "finished" (primary north star)
 - Weekly active reading sessions per user
-- Queue acceptance rate (books started from the queue vs. manually searched — note: manual search is intentionally not in MVP, so this may just be queue-start rate)
+- Queue acceptance rate (books started from the queue vs. books started after a manual Discover search — search/curated browse *is* in MVP via the Discover tab, so this compares queue-driven vs. search-driven starts)
 - Retention: users still logging sessions at week 4
 
 ---
