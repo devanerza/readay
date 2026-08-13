@@ -22,7 +22,6 @@ export function prefetchTabs(queryClient: QueryClient, userId: string) {
   void queryClient.prefetchQuery({ queryKey: ['queue-items', userId, 'want_to_read'], queryFn: () => getQueueItems(userId, 'want_to_read') });
   void queryClient.prefetchQuery({ queryKey: ['queue-items', userId, 'reading'], queryFn: () => getQueueItems(userId, 'reading') });
   void queryClient.prefetchQuery({ queryKey: ['queue-items', userId, 'finished'], queryFn: () => getQueueItems(userId, 'finished') });
-  void queryClient.prefetchQuery({ queryKey: ['queue-count', userId], queryFn: () => getQueueItems(userId) });
   void queryClient.prefetchQuery({ queryKey: ['weekly-session-days', userId], queryFn: () => getWeeklySessionDays(userId, 2) });
   void queryClient.prefetchQuery({ queryKey: ['weekly-insight', userId], queryFn: () => generateWeeklyInsight(userId) });
   void queryClient.prefetchQuery({ queryKey: ['target-performance', userId], queryFn: () => getTargetPerformance(userId) });
