@@ -51,6 +51,7 @@ export default function BookDetail() {
       const count = await getWorkPageCount(olId!);
       if (count && localBook?.id) {
         await supabase.from('books').update({ page_count: count }).eq('id', localBook.id);
+        queryClient.invalidateQueries({ queryKey: ["local-book"] });
       }
       return count;
     },
@@ -66,6 +67,7 @@ export default function BookDetail() {
       const name = names[0] ?? null;
       if (name && localBook?.id && !localBook.author) {
         await supabase.from('books').update({ author: name }).eq('id', localBook.id);
+        queryClient.invalidateQueries({ queryKey: ["local-book"] });
       }
       return name;
     },
