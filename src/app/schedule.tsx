@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Alert, Image, Modal, FlatList } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Image, Modal, FlatList, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth-store";
 import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, type ScheduleBlockWithBook } from "../lib/schedule-blocks";
 import { getQueueItems, type QueueItemWithBook } from "../lib/queue-items";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import Icon from "../components/Icon";
 import { ScheduleSkeleton } from "../components/SkeletonScreens";
 
@@ -51,11 +52,13 @@ export default function Schedule() {
   const [showForm, setShowForm] = useState(false);
   const [showBookPicker, setShowBookPicker] = useState(false);
 
-  const { data: blocks, isLoading } = useQuery({
+  const { data: blocks, isLoading, refetch: refetchBlocks, isRefetching: refetchingBlocks } = useQuery({
     queryKey: ["schedule-blocks", userId],
     queryFn: () => getScheduleBlocks(userId!),
     enabled: !!userId,
   });
+
+  const { refreshing: isRefreshing, onRefresh } = usePullRefresh([refetchBlocks], refetchingBlocks);
 
   const { data: queueItems = [] } = useQuery({
     queryKey: ["queue-all", userId],
@@ -147,6 +150,9 @@ export default function Schedule() {
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={REFRESH_TINT} colors={REFRESH_COLORS} />
+          }
         >
           {/* Today's Blocks */}
           <View className="gap-4 mt-2">

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, RefreshControl } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { cacheBookFromDetail } from "../lib/book-service";
 import { addToQueue, getCurrentPage, getQueueItemForBook } from "../lib/queue-items";
 import { getReadingStats } from "../lib/reading-sessions";
 import { supabase } from "../lib/supabase";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
 import { BookDetailSkeleton } from "../components/SkeletonScreens";
@@ -27,7 +28,7 @@ export default function BookDetail() {
   const [toast, setToast] = React.useState<string | null>(null);
   const [confirmStart, setConfirmStart] = React.useState(false);
 
-  const { data: localBook, isLoading: localLoading } = useQuery({
+  const { data: localBook, isLoading: localLoading, refetch: refetchLocalBook, isRefetching: refetchingLocalBook } = useQuery({
     queryKey: ["local-book", book_id || open_library_id],
     queryFn: () => book_id ? getBook(book_id) : getBookByOlId(open_library_id!),
     enabled: !!(book_id || open_library_id),
@@ -35,7 +36,7 @@ export default function BookDetail() {
 
   const olId = open_library_id || localBook?.open_library_id;
 
-  const { data: detail, isLoading: olLoading } = useQuery({
+  const { data: detail, isLoading: olLoading, refetch: refetchDetail, isRefetching: refetchingDetail } = useQuery({
     queryKey: ["ol-detail", olId],
     queryFn: () => getBookDetails(olId!),
     enabled: !!olId,
@@ -73,23 +74,31 @@ export default function BookDetail() {
 
   const displayAuthor = localBook?.author ?? olAuthor ?? null;
 
-  const { data: currentPage = 0 } = useQuery({
+  const { data: currentPage = 0, refetch: refetchCurrentPage, isRefetching: refetchingCurrentPage } = useQuery({
     queryKey: ["current-page", localBookId, userId],
     queryFn: () => getCurrentPage(localBookId!, userId!),
     enabled: !!localBookId && !!userId,
   });
 
-  const { data: queueItem } = useQuery({
+  const { data: queueItem, refetch: refetchQueueItem, isRefetching: refetchingQueueItem } = useQuery({
     queryKey: ["queue-item", localBookId, userId],
     queryFn: () => getQueueItemForBook(localBookId!, userId!),
     enabled: !!localBookId && !!userId,
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats, refetch: refetchStats, isRefetching: refetchingStats } = useQuery({
     queryKey: ["reading-stats", userId],
     queryFn: () => getReadingStats(userId!),
     enabled: !!userId,
   });
+
+  const refreshing =
+    refetchingLocalBook || refetchingDetail || refetchingCurrentPage || refetchingQueueItem || refetchingStats;
+
+  const { refreshing: isRefreshing, onRefresh } = usePullRefresh(
+    [refetchLocalBook, refetchDetail, refetchCurrentPage, refetchQueueItem, refetchStats],
+    refreshing
+  );
 
   const displayCover = detail?.covers?.[0] ? buildCoverUrl(detail.covers[0]) : null;
   const displayDescription = typeof detail?.description === "string" ? detail.description : detail?.description?.value ?? null;
@@ -135,6 +144,9 @@ export default function BookDetail() {
           className="flex-1"
           contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={REFRESH_TINT} colors={REFRESH_COLORS} />
+          }
         >
           {/* Hero */}
           <View className="px-margin-page pt-4 items-center">

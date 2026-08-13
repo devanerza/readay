@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable, ImageBackground } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, ImageBackground, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -8,8 +8,11 @@ import { getReadingStats } from "../../lib/reading-sessions";
 import { getAllCurrentlyReading, getQueueItems } from "../../lib/queue-items";
 import { getScheduleBlocks } from "../../lib/schedule-blocks";
 import { getProfile } from "../../lib/profiles";
+import { getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import { HomeSkeleton } from "../../components/SkeletonScreens";
+import { SkeletonBlock } from "../../components/Skeleton";
 import { BookCardVertical } from "../../components/BookCard";
 import ConfirmModal from "../../components/ConfirmModal";
 import Icon from "../../components/Icon";
@@ -28,48 +31,81 @@ function getGreetingSubtitle(streakDays: number) {
   return "Start a session to begin your streak.";
 }
 
+function olToDisplay(doc: OLSearchResult) {
+  return {
+    key: doc.key,
+    open_library_id: extractOpenLibraryId(doc.key),
+    title: doc.title,
+    author: doc.author_name?.[0] ?? "",
+    cover_url: doc.cover_i ? buildCoverUrl(doc.cover_i) : null,
+  };
+}
+
 export default function Home() {
   const router = useRouter();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
   const [confirmStart, setConfirmStart] = React.useState(false);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile, isRefetching: refetchingProfile } = useQuery({
     queryKey: ["profile", userId],
     queryFn: () => getProfile(userId!),
     select: (d) => d ?? { display_name: null },
     enabled: !!userId,
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching: refetchingStats } = useQuery({
     queryKey: ["reading-stats", userId],
     queryFn: () => getReadingStats(userId!),
     enabled: !!userId,
   });
 
-  const { data: readingItems = [], isLoading: readingLoading } = useQuery({
+  const { data: readingItems = [], isLoading: readingLoading, refetch: refetchReading, isRefetching: refetchingReading } = useQuery({
     queryKey: ["all-reading", userId],
     queryFn: () => getAllCurrentlyReading(userId!),
     enabled: !!userId,
   });
 
-  const { data: wantToReadItems = [], isLoading: wantLoading } = useQuery({
+  const { data: wantToReadItems = [], isLoading: wantLoading, refetch: refetchWant, isRefetching: refetchingWant } = useQuery({
     queryKey: ["want-to-read", userId],
     queryFn: () => getQueueItems(userId!, 'want_to_read'),
     enabled: !!userId,
   });
 
-  const { data: scheduleBlocks = [], isLoading: scheduleLoading } = useQuery({
+  const { data: scheduleBlocks = [], isLoading: scheduleLoading, refetch: refetchSchedule, isRefetching: refetchingSchedule } = useQuery({
     queryKey: ["schedule-blocks", userId],
     queryFn: () => getScheduleBlocks(userId!),
     enabled: !!userId,
   });
 
-  const { data: finishedBooks, isLoading: finishedLoading } = useQuery({
+  const { data: finishedBooks, isLoading: finishedLoading, refetch: refetchFinished, isRefetching: refetchingFinished } = useQuery({
     queryKey: ["finished-books", userId],
     queryFn: () => getQueueItems(userId!, 'finished'),
     enabled: !!userId,
   });
+
+  const topGenre = React.useMemo(() => {
+    const weights = (profile as { genre_weights?: Record<string, number> } | null)?.genre_weights;
+    if (!weights) return "fiction";
+    const sorted = Object.entries(weights).sort(([, a], [, b]) => b - a);
+    return sorted[0]?.[0] ?? "fiction";
+  }, [profile]);
+
+  const { data: recommendedResults, isLoading: recommendedLoading, refetch: refetchRecommended, isRefetching: refetchingRecommended } = useQuery({
+    queryKey: ["home-recommendations", topGenre],
+    queryFn: () => getBooksBySubject(topGenre, 20),
+    enabled: !!userId && wantToReadItems.length === 0,
+  });
+
+  const recommendedItems = React.useMemo(() => (recommendedResults ?? []).slice(0, 8).map(olToDisplay), [recommendedResults]);
+
+  const refreshing =
+    refetchingProfile || refetchingStats || refetchingReading || refetchingWant || refetchingSchedule || refetchingFinished || refetchingRecommended;
+
+  const { refreshing: isRefreshing, onRefresh } = usePullRefresh(
+    [refetchProfile, refetchStats, refetchReading, refetchWant, refetchSchedule, refetchFinished, refetchRecommended],
+    refreshing
+  );
 
   if (profileLoading || statsLoading || readingLoading || wantLoading || scheduleLoading || finishedLoading) return <HomeSkeleton />;
 
@@ -115,6 +151,9 @@ export default function Home() {
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={REFRESH_TINT} colors={REFRESH_COLORS} />
+          }
         >
           {/* Friendly Greeting */}
           <View className="mt-2">
@@ -346,6 +385,61 @@ export default function Home() {
                         <Icon name="play_arrow" size={14} color="#52634c" filled />
                         <Text className="font-label-md text-primary text-xs">Start Reading</Text>
                       </View>
+                    </View>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : recommendedLoading ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              nestedScrollEnabled
+              contentContainerStyle={{ gap: 16 }}
+            >
+              {[1, 2, 3].map((i) => (
+                <View key={i} className="w-[220px] gap-2">
+                  <SkeletonBlock className="w-full h-[350px] rounded-2xl" />
+                  <SkeletonBlock className="w-full h-4" />
+                  <SkeletonBlock className="w-2/3 h-3" />
+                </View>
+              ))}
+            </ScrollView>
+          ) : recommendedItems.length > 0 ? (
+            <View className="gap-4">
+              <View className="flex-row justify-between items-end px-1">
+                <Text className="font-headline-md text-on-surface">Recommended for You</Text>
+                <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/discover" as never)}>
+                  <Text className="text-on-surface-variant font-label-md">See All</Text>
+                  <Icon name="chevron_right" size={16} color="#444841" />
+                </Pressable>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={{ gap: 16 }}
+              >
+                {recommendedItems.map((d) => (
+                  <Pressable
+                    key={d.key}
+                    onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                    className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                  >
+                    <View className="w-full h-[350px] bg-surface-variant">
+                      {d.cover_url ? (
+                        <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                      ) : (
+                        <View className="flex-1 items-center justify-center">
+                          <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View className="p-3 gap-1">
+                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{d.title}</Text>
+                      {d.author ? (
+                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{d.author}</Text>
+                      ) : null}
                     </View>
                   </Pressable>
                 ))}

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Image, Pressable, Alert } from "react-native";
+import { View, Text, ScrollView, Image, Pressable, Alert, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getQueueItems, updateQueueItemStatus, deleteQueueItem } from "../../lib/queue-items";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import TabSwitcher from "../../components/TabSwitcher";
 import EmptyState from "../../components/EmptyState";
@@ -28,11 +29,13 @@ export default function Library() {
   const [activeTab, setActiveTab] = useState<TabKey>("want_to_read");
   const [removeTarget, setRemoveTarget] = useState<{ id: string; title: string } | null>(null);
 
-  const { data: items, isLoading } = useQuery({
+  const { data: items, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["queue-items", userId, activeTab],
     queryFn: () => getQueueItems(userId!, activeTab === "want_to_read" ? undefined : activeTab),
     enabled: !!userId,
   });
+
+  const { refreshing: isRefreshing, onRefresh } = usePullRefresh([refetch], isRefetching);
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'reading' | 'finished' | 'want_to_read' }) =>
@@ -89,6 +92,9 @@ export default function Library() {
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 16 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={REFRESH_TINT} colors={REFRESH_COLORS} />
+          }
         >
           {filteredItems.length > 0 ? filteredItems.map((item) => {
             const next = getNextStatus(item.status);

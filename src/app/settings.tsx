@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth-store";
 import { getProfile } from "../lib/profiles";
 import { supabase } from "../lib/supabase";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import TopAppBar from "../components/TopAppBar";
 import ConfirmModal from "../components/ConfirmModal";
 import Icon, { type IconName } from "../components/Icon";

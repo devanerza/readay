@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, ScrollView, Image, Pressable, ImageBackground } from "react-native";
+import { View, Text, TextInput, ScrollView, Image, Pressable, ImageBackground, RefreshControl } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getProfile } from "../../lib/profiles";
 import { searchBooks, getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import Icon from "../../components/Icon";
 import { SkeletonBlock } from "../../components/Skeleton";
@@ -51,19 +52,19 @@ export default function Discover() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const { data: profile } = useQuery({
+  const { data: profile, refetch: refetchProfile, isRefetching: refetchingProfile } = useQuery({
     queryKey: ["profile", userId],
     queryFn: () => getProfile(userId!),
     enabled: !!userId,
   });
 
-  const { data: searchResults, isLoading: searching } = useQuery({
+  const { data: searchResults, isLoading: searching, refetch: refetchSearch, isRefetching: refetchingSearch } = useQuery({
     queryKey: ["ol-search", debouncedQuery],
     queryFn: () => searchBooks(debouncedQuery, 20),
     enabled: debouncedQuery.length >= 2,
   });
 
-  const { data: subjectResults, isLoading: subjectLoading } = useQuery({
+  const { data: subjectResults, isLoading: subjectLoading, refetch: refetchSubject, isRefetching: refetchingSubject } = useQuery({
     queryKey: ["ol-subject", activeGenre],
     queryFn: () => getBooksBySubject(SUBJECT_MAP[activeGenre] ?? "fiction", 20),
     enabled: !debouncedQuery,
@@ -77,11 +78,19 @@ export default function Discover() {
 
   const topGenre = genreEntries[0]?.[0] ?? "fiction";
 
-  const { data: favoriteResults, isLoading: favoriteLoading } = useQuery({
+  const { data: favoriteResults, isLoading: favoriteLoading, refetch: refetchFavorites, isRefetching: refetchingFavorites } = useQuery({
     queryKey: ["ol-favorites", topGenre],
     queryFn: () => getBooksBySubject(topGenre, 20),
     enabled: !debouncedQuery && !!topGenre,
   });
+
+  const refreshing =
+    refetchingProfile || refetchingSearch || refetchingSubject || refetchingFavorites;
+
+  const { refreshing: isRefreshing, onRefresh } = usePullRefresh(
+    [refetchProfile, refetchSearch, refetchSubject, refetchFavorites],
+    refreshing
+  );
 
   const displayDocs = (debouncedQuery ? searchResults : subjectResults) ?? [];
   const perfectDocs = subjectResults?.slice(0, 2) ?? [];
@@ -98,6 +107,9 @@ export default function Discover() {
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={REFRESH_TINT} colors={REFRESH_COLORS} />
+          }
         >
           {/* Search Bar */}
           <View className="mt-2">

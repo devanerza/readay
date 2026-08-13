@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { getProfile } from "../../lib/profiles";
 import { getReadingStats, getWeeklySessionDays, getTargetPerformance } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
 import { generateWeeklyInsight } from "../../lib/weekly-coach";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import StatTile from "../../components/StatTile";
 import { ProfileSkeleton } from "../../components/SkeletonScreens";
@@ -56,43 +57,43 @@ export default function Profile() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, refetch: refetchProfile, isRefetching: refetchingProfile } = useQuery({
     queryKey: ["profile", userId],
     queryFn: () => getProfile(userId!),
     enabled: !!userId,
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching: refetchingStats } = useQuery({
     queryKey: ["reading-stats", userId],
     queryFn: () => getReadingStats(userId!),
     enabled: !!userId,
   });
 
-  const { data: queueItems } = useQuery({
+  const { data: queueItems, refetch: refetchQueue, isRefetching: refetchingQueue } = useQuery({
     queryKey: ["queue-count", userId],
     queryFn: () => getQueueItems(userId!),
     enabled: !!userId,
   });
 
-  const { data: weekData } = useQuery({
+  const { data: weekData, refetch: refetchWeek, isRefetching: refetchingWeek } = useQuery({
     queryKey: ["weekly-session-days", userId],
     queryFn: () => getWeeklySessionDays(userId!, 2),
     enabled: !!userId,
   });
 
-  const { data: insight, isLoading: insightLoading } = useQuery({
+  const { data: insight, isLoading: insightLoading, refetch: refetchInsight, isRefetching: refetchingInsight } = useQuery({
     queryKey: ["weekly-insight", userId],
     queryFn: () => generateWeeklyInsight(userId!),
     enabled: !!userId,
   });
 
-  const { data: finishedBooks } = useQuery({
+  const { data: finishedBooks, refetch: refetchFinished, isRefetching: refetchingFinished } = useQuery({
     queryKey: ["finished-books", userId],
     queryFn: () => getQueueItems(userId!, 'finished'),
     enabled: !!userId,
   });
 
-  const { data: targetPerf } = useQuery({
+  const { data: targetPerf, refetch: refetchTarget, isRefetching: refetchingTarget } = useQuery({
     queryKey: ["target-performance", userId],
     queryFn: () => getTargetPerformance(userId!),
     enabled: !!userId,
@@ -134,6 +135,15 @@ export default function Profile() {
 
   const isLoading = profileLoading || statsLoading || insightLoading;
 
+  const refreshing =
+    refetchingProfile || refetchingStats || refetchingQueue || refetchingWeek ||
+    refetchingInsight || refetchingFinished || refetchingTarget;
+
+  const { refreshing: isRefreshing, onRefresh } = usePullRefresh(
+    [refetchProfile, refetchStats, refetchQueue, refetchWeek, refetchInsight, refetchFinished, refetchTarget],
+    refreshing
+  );
+
   if (isLoading) return <ProfileSkeleton />;
 
   return (
@@ -147,6 +157,9 @@ export default function Profile() {
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={REFRESH_TINT} colors={REFRESH_COLORS} />
+          }
         >
           {/* Profile Header */}
           <View className="items-center mt-8 gap-4 px-2">
