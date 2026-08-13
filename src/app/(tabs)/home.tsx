@@ -119,12 +119,15 @@ export default function Home() {
     const today = now.getDay();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    for (const b of scheduleBlocks) {
+    const upcomingToday = scheduleBlocks.find((b) => {
       const [bh, bm] = b.start_time.split(":").map(Number);
-      const blockMinutes = bh * 60 + bm;
-      if (b.day_of_week === today && blockMinutes > currentMinutes) return b;
-      if (b.day_of_week > today) return b;
-    }
+      return b.day_of_week === today && (bh * 60 + bm) > currentMinutes;
+    });
+    if (upcomingToday) return upcomingToday;
+
+    const nextDay = scheduleBlocks.find((b) => b.day_of_week > today);
+    if (nextDay) return nextDay;
+
     if (scheduleBlocks.length > 0) return scheduleBlocks[0];
     return null;
   })();
@@ -285,7 +288,7 @@ export default function Home() {
               <View className="items-center gap-1">
                 <Text className="font-title-lg text-lg text-on-surface">Set Your Reading Schedule</Text>
                 <Text className="text-on-surface-variant text-[12px] text-center max-w-[260px]">
-                  Pick a time to read, we'll remind you when it's time.
+                  Pick a time to read, we&apos;ll remind you when it&apos;s time.
                 </Text>
               </View>
               <Text className="text-primary font-label-lg mt-1">Create Schedule</Text>
@@ -498,7 +501,9 @@ export default function Home() {
         onCancel={() => setConfirmStart(false)}
         onConfirm={() => {
           setConfirmStart(false);
-          router.push(nextBlock?.books ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}` : "/reading-session");
+          router.push(nextBlock?.books
+            ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}`
+            : `/reading-session?target_minutes=${nextBlockDuration}`);
         }}
       />
     </View>
