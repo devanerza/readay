@@ -3,10 +3,9 @@ import { View, Text, ScrollView, Pressable, TextInput, Alert, Image, Modal, Flat
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth-store";
 import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, type ScheduleBlockWithBook } from "../lib/schedule-blocks";
-import { getQueueItems, type QueueItemWithBook } from "../lib/queue-items";
+import { getQueueItems } from "../lib/queue-items";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import Icon from "../components/Icon";
 import { ScheduleSkeleton } from "../components/SkeletonScreens";
@@ -39,7 +38,9 @@ function formatTime(h: string, m: string) {
 function parseDuration(start: string, end: string): number {
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  return (eh * 60 + em) - (sh * 60 + sm);
+  let diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff <= 0) diff += 24 * 60;
+  return diff;
 }
 
 export default function Schedule() {
@@ -398,7 +399,8 @@ export default function Schedule() {
 function BlockCard({ block, onEdit, onDelete }: { block: ScheduleBlockWithBook; onEdit: () => void; onDelete: () => void }) {
   const [sh, sm] = block.start_time.split(":").map(Number);
   const [eh, em] = block.end_time.split(":").map(Number);
-  const duration = (eh * 60 + em) - (sh * 60 + sm);
+  let duration = (eh * 60 + em) - (sh * 60 + sm);
+  if (duration <= 0) duration += 24 * 60;
   const hour = new Date().getHours();
   const isUpcoming = sh > hour || (sh === hour && sm > new Date().getMinutes());
 
