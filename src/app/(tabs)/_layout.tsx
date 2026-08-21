@@ -16,13 +16,13 @@ const TABS: { name: string; label: string; icon: any }[] = [
 function CustomTabBar({ state, navigation }: any) {
   return (
     <View
-      className="absolute bottom-0 left-0 w-full h-20 flex-row justify-around items-center px-3 pb-6 pt-3 bg-primary rounded-t-xl"
+      className="absolute bottom-6 left-4 right-4 h-16 flex-row justify-around items-center px-3 bg-primary rounded-full"
       style={{
         shadowColor: "#2d2d2d",
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 20,
-        elevation: 12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 16,
       }}
     >
       {state.routes.map((route: any, index: number) => {
@@ -91,7 +91,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{ headerShown: false, lazy: true }}
+      screenOptions={{ headerShown: false, lazy: false }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen name="home" />
