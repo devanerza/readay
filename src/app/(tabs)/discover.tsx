@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, ScrollView, Image, Pressable, ImageBackground, RefreshControl } from "react-native";
+import { View, Text, TextInput, ScrollView, Pressable, RefreshControl } from "react-native";
+import { Image, ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -198,7 +199,7 @@ export default function Discover() {
                       >
                         <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
                           {d.cover_url ? (
-                            <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                            <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                           ) : (
                             <View className="flex-1 items-center justify-center">
                               <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
@@ -284,7 +285,7 @@ export default function Discover() {
                         >
                           <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                             {d.cover_url ? (
-                              <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                              <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                             ) : (
                               <View className="flex-1 items-center justify-center">
                                 <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
@@ -314,7 +315,7 @@ export default function Discover() {
                     >
                       <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
                         {d.cover_url ? (
-                          <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                          <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                         ) : (
                           <View className="flex-1 items-center justify-center">
                             <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
@@ -349,10 +350,14 @@ function FeatureCard({
   return (
     <Pressable onPress={onPress} className="rounded-2xl overflow-hidden bg-surface-container-low active:opacity-80">
       <ImageBackground
-        source={{ uri: coverUrl ?? "" }}
-        className="h-[240px] justify-end"
-        resizeMode="cover"
-        style={coverUrl ? {} : { backgroundColor: "#e0e3db" }}
+        source={coverUrl ? { uri: coverUrl } : null}
+        contentFit="cover"
+        recyclingKey={coverUrl ?? undefined}
+        transition={150}
+        style={[
+          coverUrl ? {} : { backgroundColor: "#e0e3db" },
+          { width: "100%", height: 240, justifyContent: "flex-end" },
+        ]}
       >
         <View className="p-6 h-full" style={{ backgroundColor: coverUrl ? "rgba(0,0,0,0.4)" : "transparent" }}>
           <Text className="font-display text-headline-lg text-white mb-1">{title}</Text>

@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable, ImageBackground, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
+import { Image, ImageBackground } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -183,7 +184,13 @@ export default function Home() {
               >
                 <View className="rounded-[24px] overflow-hidden">
                   {nextBlock.books?.cover_url ? (
-                    <ImageBackground source={{ uri: nextBlock.books.cover_url }} className="w-full h-[440px]">
+                    <ImageBackground
+                      source={{ uri: nextBlock.books.cover_url }}
+                      style={{ width: "100%", height: 440 }}
+                      contentFit="cover"
+                      recyclingKey={nextBlock.books.cover_url}
+                      transition={150}
+                    >
                       <View className="flex-1 relative">
                         <View className="absolute inset-0 bg-black/50" />
                         <View className="flex-1 justify-between p-6">
@@ -313,7 +320,7 @@ export default function Home() {
                   >
                     <View className="w-full h-[350px] bg-surface-variant">
                       {item.books?.cover_url ? (
-                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
                         <View className="flex-1 items-center justify-center">
                           <Icon name="auto_stories" size={36} color="#747870" />
@@ -372,7 +379,7 @@ export default function Home() {
                   >
                     <View className="w-full h-[350] bg-surface-variant">
                       {item.books?.cover_url ? (
-                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
                         <View className="flex-1 items-center justify-center">
                           <Icon name="auto_stories" size={36} color="#747870" />
@@ -431,7 +438,7 @@ export default function Home() {
                   >
                     <View className="w-full h-[350px] bg-surface-variant">
                       {d.cover_url ? (
-                        <Image source={{ uri: d.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                       ) : (
                         <View className="flex-1 items-center justify-center">
                           <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
