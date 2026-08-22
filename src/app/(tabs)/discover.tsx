@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getProfile } from "../../lib/profiles";
 import { searchBooks, getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
+import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import Icon from "../../components/Icon";
@@ -93,9 +94,21 @@ export default function Discover() {
     refreshing
   );
 
-  const displayDocs = (debouncedQuery ? searchResults : subjectResults) ?? [];
-  const perfectDocs = subjectResults?.slice(0, 2) ?? [];
-  const favoriteDocs = favoriteResults?.slice(0, 8) ?? [];
+  const displayDocs = React.useMemo(
+    () => (debouncedQuery ? searchResults : subjectResults) ?? [],
+    [debouncedQuery, searchResults, subjectResults]
+  );
+  const perfectDocs = React.useMemo(() => subjectResults?.slice(0, 2) ?? [], [subjectResults]);
+  const favoriteDocs = React.useMemo(() => favoriteResults?.slice(0, 8) ?? [], [favoriteResults]);
+
+  const coverUrls = React.useMemo(
+    () => [...displayDocs, ...perfectDocs, ...favoriteDocs].map((doc) => olToDisplay(doc).cover_url),
+    [displayDocs, perfectDocs, favoriteDocs]
+  );
+
+  React.useEffect(() => {
+    prefetchCovers(coverUrls);
+  }, [coverUrls]);
 
   return (
     <View className="flex-1 bg-background">
@@ -195,7 +208,7 @@ export default function Discover() {
                       <Pressable
                         key={d.key}
                         className="w-full"
-                        onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                        onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                       >
                         <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
                           {d.cover_url ? (
@@ -243,7 +256,7 @@ export default function Discover() {
                           coverUrl={d.cover_url}
                           title={d.title}
                           author={d.author ? `by ${d.author}` : ""}
-                          onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                          onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                         />
                       );
                     })}
@@ -281,7 +294,7 @@ export default function Discover() {
                         <Pressable
                           key={d.key}
                           className="w-[140px]"
-                          onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                          onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                         >
                           <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                             {d.cover_url ? (
@@ -311,7 +324,7 @@ export default function Discover() {
                     <Pressable
                       key={d.key}
                       className="w-full"
-                      onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                      onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                     >
                       <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
                         {d.cover_url ? (

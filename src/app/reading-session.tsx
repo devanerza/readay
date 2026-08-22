@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Image, Alert, TextInput, Modal } from "react-native";
+import { View, Text, Pressable, Alert, TextInput, Modal } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -135,7 +136,7 @@ export default function ReadingSession() {
         <View className="flex-1 items-center justify-center px-margin-page">
           <View className="mb-6 w-40 aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
             {book?.cover_url ? (
-              <Image source={{ uri: book.cover_url }} className="w-full h-full" resizeMode="cover" />
+              <Image source={{ uri: book.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
             ) : (
               <View className="flex-1 items-center justify-center">
                 <Text className="text-outline font-display text-headline-xl">{book?.title?.[0] ?? "?"}</Text>

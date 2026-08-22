@@ -10,6 +10,7 @@ import { getAllCurrentlyReading, getQueueItems } from "../../lib/queue-items";
 import { getScheduleBlocks } from "../../lib/schedule-blocks";
 import { getProfile } from "../../lib/profiles";
 import { getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
+import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import { HomeSkeleton } from "../../components/SkeletonScreens";
@@ -99,6 +100,15 @@ export default function Home() {
   });
 
   const recommendedItems = React.useMemo(() => (recommendedResults ?? []).slice(0, 8).map(olToDisplay), [recommendedResults]);
+
+  React.useEffect(() => {
+    if (!userId) return;
+    prefetchCovers([
+      ...readingItems.map((i) => i.books?.cover_url),
+      ...wantToReadItems.map((i) => i.books?.cover_url),
+      ...recommendedItems.map((d) => d.cover_url),
+    ]);
+  }, [userId, readingItems, wantToReadItems, recommendedItems]);
 
   const refreshing =
     refetchingProfile || refetchingStats || refetchingReading || refetchingWant || refetchingSchedule || refetchingFinished || refetchingRecommended;
@@ -315,7 +325,7 @@ export default function Home() {
                 {readingItems.map((item) => (
                   <Pressable
                     key={item.id}
-                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
+                    onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
                     className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
                     <View className="w-full h-[350px] bg-surface-variant">
@@ -374,7 +384,7 @@ export default function Home() {
                 {wantToReadItems.map((item) => (
                   <Pressable
                     key={item.id}
-                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
+                    onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
                     className="w-[220] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
                     <View className="w-full h-[350] bg-surface-variant">
@@ -433,7 +443,7 @@ export default function Home() {
                 {recommendedItems.map((d) => (
                   <Pressable
                     key={d.key}
-                    onPress={() => router.push(`/book-detail?open_library_id=${d.open_library_id}`)}
+                    onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                     className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
                     <View className="w-full h-[350px] bg-surface-variant">
@@ -488,7 +498,7 @@ export default function Home() {
                       author: item.books?.author,
                       cover_url: item.books?.cover_url,
                     }}
-                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
+                    onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
                     subtitle={item.books?.author}
                   />
                 ))}

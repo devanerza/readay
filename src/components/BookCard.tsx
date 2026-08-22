@@ -1,5 +1,7 @@
 import React from "react";
-import { View, Text, Image, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
+import { Image } from "expo-image";
+import { toCoverThumbUrl } from "../lib/open-library";
 
 type Book = {
   title: string;
@@ -25,7 +27,11 @@ export function BookCover({ book, size = "md", onPress }: Props) {
     <Pressable onPress={onPress} className="shrink-0" style={{ width: dim.cover.width }}>
       <View className="aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
         {book.cover_url ? (
-          <Image source={{ uri: book.cover_url }} className="w-full h-full" resizeMode="cover" />
+          <Image
+            source={{ uri: size === "lg" ? book.cover_url : toCoverThumbUrl(book.cover_url) }}
+            style={{ width: "100%", height: "100%" }}
+            contentFit="cover"
+          />
         ) : (
           <View className="flex-1 items-center justify-center">
             <Text className="text-outline font-display text-headline-md">

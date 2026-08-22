@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, ScrollView, Image, Pressable, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -154,7 +155,7 @@ export default function BookDetail() {
           <View className="px-margin-page pt-4 items-center">
             <View className="w-full h-[440] aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
               {displayCover ? (
-                <Image source={{ uri: displayCover }} className="w-full h-full" resizeMode="cover" />
+                <Image source={{ uri: displayCover }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
               ) : (
                 <View className="flex-1 items-center justify-center">
                   <Text className="text-outline font-display text-headline-xl">{detail?.title?.[0] ?? "?"}</Text>

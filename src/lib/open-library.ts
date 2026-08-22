@@ -44,6 +44,13 @@ export function buildCoverUrl(coverId: number, size: 'S' | 'M' | 'L' = 'L'): str
   return `https://covers.openlibrary.org/b/id/${coverId}-${size}.jpg`;
 }
 
+export function toCoverThumbUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  return url.includes('covers.openlibrary.org') && url.endsWith('-L.jpg')
+    ? url.replace(/-L\.jpg$/, '-M.jpg')
+    : url;
+}
+
 export async function searchBooks(query: string, limit = 20): Promise<OLSearchResult[]> {
   const data = await fetchJSON<OLSearchResponse>(
     `${OPEN_LIBRARY_BASE}/search.json?q=${encodeURIComponent(query)}&limit=${limit}`

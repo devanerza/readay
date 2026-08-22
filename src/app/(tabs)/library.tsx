@@ -1,10 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Image, Pressable, Alert, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getQueueItems, updateQueueItemStatus, deleteQueueItem } from "../../lib/queue-items";
+import { toCoverThumbUrl } from "../../lib/open-library";
+import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import TabSwitcher from "../../components/TabSwitcher";
@@ -110,12 +113,12 @@ export default function Library() {
                 <View className="flex-row p-4 gap-4">
                   {/* Book Cover */}
                   <Pressable
-                    onPress={() => router.push(`/book-detail?book_id=${item.book_id}`)}
+                    onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
                     className="w-20 shrink-0"
                   >
                     <View className="aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                       {item.books?.cover_url ? (
-                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: toCoverThumbUrl(item.books.cover_url) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
                       ) : (
                         <View className="flex-1 items-center justify-center">
                           <Text className="text-outline font-display text-headline-md">

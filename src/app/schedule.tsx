@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Alert, Image, Modal, FlatList, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Alert, Modal, FlatList, RefreshControl } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth-store";
 import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, type ScheduleBlockWithBook } from "../lib/schedule-blocks";
 import { getQueueItems } from "../lib/queue-items";
+import { toCoverThumbUrl } from "../lib/open-library";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import Icon from "../components/Icon";
 import { ScheduleSkeleton } from "../components/SkeletonScreens";
@@ -237,7 +239,7 @@ export default function Schedule() {
                   <View className="flex-row items-center gap-3 bg-surface rounded-xl px-4 py-3">
                     <View className="w-10 h-14 rounded overflow-hidden bg-surface-variant">
                       {selectedBook.cover_url ? (
-                        <Image source={{ uri: selectedBook.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: toCoverThumbUrl(selectedBook.cover_url) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
                       ) : (
                         <View className="flex-1 items-center justify-center">
                           <Text className="text-outline text-xs">{selectedBook.title?.[0] ?? "?"}</Text>
@@ -365,7 +367,7 @@ export default function Schedule() {
                   >
                     <View className="w-12 h-16 rounded overflow-hidden bg-surface-variant">
                       {item.books?.cover_url ? (
-                        <Image source={{ uri: item.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+                        <Image source={{ uri: toCoverThumbUrl(item.books.cover_url) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
                       ) : (
                         <View className="flex-1 items-center justify-center">
                           <Text className="text-outline text-xs">{item.books?.title?.[0] ?? "?"}</Text>
@@ -408,7 +410,7 @@ function BlockCard({ block, onEdit, onDelete }: { block: ScheduleBlockWithBook; 
     <View className="bg-surface-container-low rounded-2xl p-5 flex-row items-center gap-4 border border-surface-variant/20">
       {block.books?.cover_url ? (
         <View className="w-12 h-16 rounded-lg overflow-hidden bg-surface-variant shrink-0">
-          <Image source={{ uri: block.books.cover_url }} className="w-full h-full" resizeMode="cover" />
+          <Image source={{ uri: toCoverThumbUrl(block.books.cover_url) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
         </View>
       ) : (
         <View className={`w-12 h-12 rounded-xl items-center justify-center shrink-0 ${isUpcoming ? "bg-primary/10" : "bg-surface-variant"}`}>
