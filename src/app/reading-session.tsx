@@ -7,6 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createReadingSession, updateSessionPages } from "../lib/reading-sessions";
 import { getBook } from "../lib/books";
 import { getCurrentPage, updateCurrentPage } from "../lib/queue-items";
+import { startSessionTimer, stopSessionTimer, pauseSessionTimer, resumeSessionTimer } from "../lib/session-notifications";
 import { useAuthStore } from "../stores/auth-store";
 import Icon from "../components/Icon";
 import TopAppBar from "../components/TopAppBar";
@@ -27,7 +28,12 @@ export default function ReadingSession() {
   const [showPageInput, setShowPageInput] = useState(false);
   const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
   const [pageInput, setPageInput] = useState("");
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const accumulatedMsRef = useRef(0);
+  const runningSinceRef = useRef<number | null>(null);
+  const timerStartedRef = useRef(false);
+
+  const elapsedSec = () =>
+    Math.floor((accumulatedMsRef.current + (runningSinceRef.current ? Date.now() - runningSinceRef.current : 0)) / 1000);
 
   const { data: book, isLoading } = useQuery({
     queryKey: ["session-book", book_id],
@@ -46,27 +52,50 @@ export default function ReadingSession() {
   const targetReached = !!targetSeconds && elapsedSeconds >= targetSeconds;
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setSeconds((s) => {
-        if (isPaused) return s;
-        return s + 1;
-      });
-    }, 1000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
+    const id = setInterval(() => {
+      if (!isPaused) setSeconds(elapsedSec());
+    }, 500);
+    return () => clearInterval(id);
   }, [isPaused]);
+
+  const togglePause = () => {
+    if (isPaused) {
+      runningSinceRef.current = Date.now();
+      setIsPaused(false);
+      resumeSessionTimer(elapsedSec());
+    } else {
+      accumulatedMsRef.current += runningSinceRef.current ? Date.now() - runningSinceRef.current : 0;
+      runningSinceRef.current = null;
+      setIsPaused(true);
+      pauseSessionTimer(elapsedSec());
+    }
+  };
+
+  useEffect(() => {
+    if (!isLoading && !timerStartedRef.current) {
+      timerStartedRef.current = true;
+      startSessionTimer(book?.title ?? null);
+    }
+  }, [isLoading, book]);
+
+  useEffect(() => {
+    runningSinceRef.current = Date.now();
+    return () => {
+      stopSessionTimer();
+    };
+  }, []);
 
   const handleEndSession = async () => {
     if (!userId) return;
-    if (elapsedSeconds < 10) { router.back(); return; }
+    const duration = elapsedSec();
+    if (duration < 10) { router.back(); return; }
 
     setSaving(true);
     try {
       const id = await createReadingSession({
         user_id: userId,
         book_id: book_id ?? null,
-        duration_seconds: elapsedSeconds,
+        duration_seconds: duration,
         target_minutes: targetMinutes ?? undefined,
         pages_read: 0,
         date: new Date().toISOString(),
@@ -175,7 +204,7 @@ export default function ReadingSession() {
 
           <View className="flex-row items-center gap-8">
             <Pressable
-              onPress={() => setIsPaused((p) => !p)}
+              onPress={togglePause}
               className="w-14 h-14 items-center justify-center rounded-full bg-surface-container border border-outline-variant active:scale-90"
             >
               <Icon name={isPaused ? "play_arrow" : "pause"} color="#52634c" filled={isPaused} />

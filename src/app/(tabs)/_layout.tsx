@@ -5,6 +5,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import Icon from "../../components/Icon";
 import { useAuthStore } from "../../stores/auth-store";
 import { prefetchTabs } from "../../lib/tab-prefetch";
+import { getScheduleBlocks } from "../../lib/schedule-blocks";
+import { usePreferencesStore } from "../../stores/preferences-store";
+import { hasNotificationPermission, syncBlockReminders, stopSessionTimer } from "../../lib/session-notifications";
 
 const TABS: { name: string; label: string; icon: any }[] = [
   { name: "home", label: "Home", icon: "auto_stories" },
@@ -83,9 +86,24 @@ export default function TabsLayout() {
   }, [session, isLoading]);
 
   const userId = session?.user.id;
+  const remindersEnabled = usePreferencesStore((s) => s.remindersEnabled);
+
   useEffect(() => {
     if (userId) prefetchTabs(queryClient, userId);
   }, [userId, queryClient]);
+
+  useEffect(() => {
+    if (!userId) return;
+    stopSessionTimer();
+    if (!remindersEnabled) return;
+    (async () => {
+      try {
+        if (await hasNotificationPermission()) {
+          await syncBlockReminders(await getScheduleBlocks(userId));
+        }
+      } catch {}
+    })();
+  }, [userId, remindersEnabled]);
 
   if (!session) return null;
 

@@ -1,6 +1,7 @@
 import "../global.css";
 import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { enableScreens, enableFreeze } from "react-native-screens";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import {
 
 import { supabase } from "../lib/supabase";
 import { useAuthStore } from "../stores/auth-store";
+import "../lib/session-notifications";
 
 enableScreens(true);
 enableFreeze(true);
@@ -55,6 +57,37 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function useNotificationObserver() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const redirect = (data: Record<string, unknown> | null | undefined) => {
+      if (!data) return;
+      const kind = data.kind;
+      if (kind !== "block_prep" && kind !== "block_start") return;
+      if (!useAuthStore.getState().session) return;
+      const bookId = typeof data.book_id === "string" ? data.book_id : null;
+      const target = typeof data.target_minutes === "string" ? data.target_minutes : null;
+      if (bookId) {
+        const qs = [`book_id=${bookId}`, target ? `target_minutes=${target}` : null].filter(Boolean).join("&");
+        router.push(`/reading-session?${qs}` as never);
+      } else {
+        router.push("/schedule" as never);
+      }
+    };
+
+    try {
+      const initial = Notifications.getLastNotificationResponse();
+      redirect(initial?.notification.request.content.data as Record<string, unknown> | undefined);
+    } catch {}
+
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      redirect(response.notification.request.content.data as Record<string, unknown>);
+    });
+    return () => subscription.remove();
+  }, [router]);
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     EBGaramond_400Regular,
@@ -69,6 +102,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
+
+  useNotificationObserver();
 
   if (!fontsLoaded) return null;
 

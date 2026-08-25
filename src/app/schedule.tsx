@@ -8,6 +8,8 @@ import { useAuthStore } from "../stores/auth-store";
 import { getScheduleBlocks, createScheduleBlock, updateScheduleBlock, deleteScheduleBlock, type ScheduleBlockWithBook } from "../lib/schedule-blocks";
 import { getQueueItems } from "../lib/queue-items";
 import { toCoverThumbUrl } from "../lib/open-library";
+import { usePreferencesStore } from "../stores/preferences-store";
+import { ensureNotificationPermission, hasNotificationPermission, syncBlockReminders } from "../lib/session-notifications";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import Icon from "../components/Icon";
 import { ScheduleSkeleton } from "../components/SkeletonScreens";
@@ -71,6 +73,19 @@ export default function Schedule() {
 
   const selectedBook = queueItems.find((q) => q.book_id === form.book_id)?.books ?? null;
 
+  const remindersEnabled = usePreferencesStore((s) => s.remindersEnabled);
+
+  const resyncReminders = async () => {
+    if (!userId || !remindersEnabled) return;
+    try {
+      if (await hasNotificationPermission()) {
+        await syncBlockReminders(await getScheduleBlocks(userId));
+      } else {
+        await ensureNotificationPermission();
+      }
+    } catch {}
+  };
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (editingId) {
@@ -95,13 +110,17 @@ export default function Schedule() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["schedule-blocks", userId] });
       resetForm();
+      resyncReminders();
     },
     onError: (e) => Alert.alert("Error", `Could not save schedule block: ${e instanceof Error ? e.message : String(e)}`),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteScheduleBlock(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["schedule-blocks", userId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["schedule-blocks", userId] });
+      resyncReminders();
+    },
     onError: (e) => Alert.alert("Error", `Could not delete schedule block: ${e instanceof Error ? e.message : String(e)}`),
   });
 
