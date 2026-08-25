@@ -37,5 +37,14 @@
   "sessionTracker.pages": "pages",
 
   "weeklyCoach.title": "Weekly Coach",
-  "weeklyCoach.insufficientData": "Not enough data this week. Keep reading!"
+  "weeklyCoach.insufficientData": "Not enough data this week. Keep reading!",
+
+  "notification.channelReminders": "Reading Reminders",
+  "notification.channelTimer": "Reading Timer",
+  "notification.prepTitle": "Reading soon",
+  "notification.prepBody": "{{label}} starts at {{time}} — get your book ready.",
+  "notification.startTitle": "Time to read",
+  "notification.startBody": "{{label}} is starting now{{withBook}}.",
+  "notification.timerTitle": "Reading in progress",
+  "notification.timerPaused": "Paused"
 }
