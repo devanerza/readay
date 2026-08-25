@@ -3,7 +3,7 @@
 
 **Version:** 0.2 (MVP)
 **Author:** Devan
-**Last updated:** July 2026
+**Last updated:** August 2026
 
 ---
 
@@ -181,6 +181,7 @@ Readay should read as a **premium lifestyle product for passionate readers** —
 | Navigation | **Expo Router** | File-based, built for Expo, avoids extra React Navigation config |
 | Auth | **Supabase Auth** (email + password) | Email confirmation disabled — `signUp` auto-confirms; `signInWithPassword` for returning users |
 | Book metadata | **Open Library API** | You've already integrated this before (book tracker project) — reuse that experience, free, no key required |
+| Image rendering | **expo-image** (already in Expo deps) | Memory + disk caching with decode downsampling for book covers; covers requested at display-appropriate sizes from Open Library's S/M/L tiers and prefetched ahead of navigation |
 | Notifications (schedule reminders) | **Expo Notifications** | Native local/push notifications without a separate service for MVP |
 | Recommendation logic (MVP) | **Rule-based scoring in a Supabase Edge Function** (weighted genre score + recency decay) | Don't reach for ML yet — a transparent weighted formula is easier to debug, explain, and iterate on than a black-box model, and it's enough to prove the loop works |
 | Weekly Coach insight text | **Anthropic API (Claude) called from a Supabase Edge Function**, given a small structured payload of the week's sessions | Cheap to generate short narrative insights; keep prompts deterministic (temperature low) so insights don't feel erratic week to week |

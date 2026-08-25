@@ -63,7 +63,7 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 ### Phase 6 — QA Pass
 - [x] Cross-check every screen against Definition of Done (§2 below)
-- [ ] Verify notifications (Expo Notifications) fire correctly for schedule reminders, and that copy matches what was provided (agent doesn't rewrite copy — flag if missing). **Status: not started — `expo-notifications` is not yet installed and no reminder wiring exists in the Schedule/Home flow.**
+- [x] Verify notifications (Expo Notifications) fire correctly for schedule reminders, and that copy matches what was provided (agent doesn't rewrite copy — flag if missing). **Status: implemented (Phase 12) — code wiring complete; on-device verification pending a dev-client rebuild.**
 - [ ] Regression check after any Supabase schema proposal is applied by Devan
 
 ### Phase 7 — Remaining MVP Gaps
@@ -186,6 +186,46 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
   4. Keep the "Add Block" button in the header and inline "+ Add block" CTAs
   5. Keep the form for creating/editing blocks
 - **Status:** ✅ *Done* — `schedule.tsx` shows only "Today's Blocks" and a flat "All Blocks" list (no 7-day grid).
+
+---
+
+### Phase 11 — Cover Image Loading Performance
+
+**Goal:** Reduce cover load times across all screens without changing any layout or visual design.
+
+#### 11.1 — Unify Rendering on expo-image
+- **Why:** Only Home/Discover used `expo-image` (memory + disk cache, decode downsampling); Library, Schedule, Book Detail, Reading Session, and `BookCard.tsx` still rendered covers with plain RN `Image`.
+- **Status:** ✅ *Done* — all five swapped to `expo-image` (`contentFit="cover"`, identical sizing styles, **no transition added** — instant display preserved to match prior behavior).
+
+#### 11.2 — Size Variants (Open Library S/M/L tiers)
+- **Why:** Every slot downloaded `-L` covers regardless of rendered size.
+- **Status:** ✅ *Done* — `toCoverThumbUrl()` in `lib/open-library.ts` maps OL `-L.jpg` → `-M.jpg` (defensive: only rewrites OL URLs). Applied to small slots only: BookCard sm/md, Library list covers, Schedule chip/picker/block rows. Home/Discover carousels, hero background, Book Detail, and Reading Session keep `-L`.
+
+#### 11.3 — Prefetch Warming
+- **Status:** ✅ *Done* — new `lib/cover-prefetch.ts` (`prefetchCovers()`: deduped via module-level Set, fire-and-forget `Image.prefetch`, capped at 6 per call). Home warms Currently-Reading/Want-to-Read/Recommended covers on load; Discover warms search/subject/favorite result covers; card presses into Book Detail prefetch their cover first (Home/Discover/Library).
+
+---
+
+### Phase 12 — Schedule Reminders + Cross-App Session Timer
+
+**Goal:** Weekly recurring reminders for schedule blocks (prep + start), plus a live ticking timer notification so users can switch to an external reader (e.g. PDF app) and still see session time. Bridge until a native PDF reader exists (then removable).
+
+**Stack decisions:**
+- `expo-notifications` (PRD §8.2-approved) for **weekly recurring block reminders** — `SchedulableTriggerInputTypes.WEEKLY` triggers (weekday = `day_of_week + 1`, since expo uses 1=Sunday; auto-repeat, no `repeats` flag), `SCHEDULE_EXACT_ALARM` added to `app.json`.
+- `react-native-notify-kit` (**new package, flagged & approved by Devan**) for the **ongoing timer notification with native chronometer** — expo-notifications cannot display/update arbitrary ongoing notifications. Notify-kit is Invertase's officially recommended maintained fork of the archived `@notifee/react-native`, TurboModules/New-Arch only (matches RN 0.86), API-compatible (`import notifee from 'react-native-notify-kit'`). No Expo config plugin needed for this non-foreground-service use.
+- Reminder strategy is **cancel-all + re-register from current blocks** after every mutation/login/settings-toggle (idempotent, no stale IDs).
+
+**Implemented:**
+1. `lib/session-notifications.ts` — channels (`reading-reminders` high, `session-timer` silent-low); `ensureNotificationPermission()` (prompts) vs `hasNotificationPermission()` (silent check used by background sync — never prompts at launch); `syncBlockReminders(blocks)` schedules two weekly notifications per block (−10 min prep with hour/day rollover handling + at-start) carrying `{ kind: 'block_prep'|'block_start', book_id?, target_minutes }`; timer fns `start/pause/resume/stopSessionTimer` via notify-kit ongoing notification (`showChronometer`, direction up; pause swaps to static elapsed text). Foreground banner handler set here.
+2. **Stopwatch hardening in `reading-session.tsx`** — replaced per-tick accumulation (`s+1`, drifts when Android throttles background JS timers — critical now that users background mid-session) with wall-clock math (`accumulatedMsRef` + `runningSinceRef`, derived from `Date.now()`, 500ms recompute interval). Saved `duration_seconds` uses precise `elapsedSec()`. Pause/resume updates both state and notification.
+3. Sync wiring — Schedule screen resyncs on save/delete (permission prompted on first save if not yet granted); tabs layout resyncs post-login only if already granted + cancels stale timer notification at launch (OS-kill orphan cleanup); sign-out cancels all scheduled reminders.
+4. Settings "Schedule reminders" row wired to real toggle — new `stores/preferences-store.ts` (Zustand persist over AsyncStorage, default On, no schema change); Off cancels all scheduled, On re-prompts/re-syncs. Theme row left static (still flagged under 7.7).
+5. Tap routing — root `_layout.tsx` observer: reminder taps deep-link to `/reading-session?book_id&target_minutes` (fallback `/schedule` when block has no linked book; skipped if no auth session); cold-start handled via `getLastNotificationResponse()`; timer-notification taps just bring the app forward (session screen is already top).
+6. i18n — new `notification.*` keys in `en.json`; all notification copy routes through `t()`.
+
+**Verification status:** tsc clean, lint clean of new issues. ⚠️ **On-device QA pending dev-client rebuild** (`npx expo prebuild && npx expo run:android` — first build is also the notify-kit × RN 0.86 compat checkpoint; fallback if it fails = static sticky notification, escalate to Devan). QA checklist: verify scheduled set via `getAllScheduledNotificationsAsync()` dump; prep fires −10 min; timer keeps counting across app switch into external reader and matches wall clock on return; toggle off empties schedule; kill-app reminder still fires and cold-start tap routes correctly.
+
+**Known limitations (accepted):** iOS shows static text instead of chronometer (APK-first product); OEM battery managers may suppress alarms on aggressive devices (notify-kit falls back to inexact alarms); if OS kills the process mid-session the stopwatch state is lost by design (offline logging out of scope, PRD §10.3).
 
 ---
 
