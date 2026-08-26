@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { View, Text, Pressable } from "react-native";
 import { Tabs, useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
 import Icon from "../../components/Icon";
 import { useAuthStore } from "../../stores/auth-store";
@@ -18,16 +19,22 @@ const TABS: { name: string; label: string; icon: any }[] = [
 
 function CustomTabBar({ state, navigation }: any) {
   return (
-    <View
-      className="absolute bottom-6 left-4 right-4 h-16 flex-row justify-around items-center px-3 bg-primary rounded-full"
-      style={{
-        shadowColor: "#2d2d2d",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 16,
-        elevation: 16,
-      }}
-    >
+    <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0">
+      <LinearGradient
+        pointerEvents="none"
+        colors={["rgba(251,249,245,0)", "#fbf9f5"]}
+        style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 96 }}
+      />
+      <View
+        className="mx-4 mb-6 h-16 flex-row justify-around items-center px-3 bg-primary rounded-full"
+        style={{
+          shadowColor: "#2d2d2d",
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.15,
+          shadowRadius: 16,
+          elevation: 16,
+        }}
+      >
       {state.routes.map((route: any, index: number) => {
         const tab = TABS.find((t) => t.name === route.name);
         if (!tab) return null;
@@ -61,6 +68,7 @@ function CustomTabBar({ state, navigation }: any) {
           </Pressable>
         );
       })}
+      </View>
     </View>
   );
 }
