@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
-import { Image, ImageBackground } from "expo-image";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
@@ -18,6 +18,23 @@ import { SkeletonBlock } from "../../components/Skeleton";
 import { BookCardVertical } from "../../components/BookCard";
 import ConfirmModal from "../../components/ConfirmModal";
 import Icon from "../../components/Icon";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function describeNextBlockTime(block: { day_of_week: number; start_time: string }) {
+  const now = new Date();
+  const [h, m] = block.start_time.split(":").map(Number);
+
+  if (block.day_of_week === now.getDay()) {
+    const blockTime = new Date(); blockTime.setHours(h, m, 0);
+    const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
+    if (diff > 0) return `${block.start_time.slice(0, 5)} — in ${diff} min`;
+    return `Scheduled for ${block.start_time.slice(0, 5)}`;
+  }
+  const daysFromNow = (block.day_of_week + 7 - now.getDay()) % 7;
+  if (daysFromNow === 1) return `Tomorrow at ${block.start_time.slice(0, 5)}`;
+  return `${DAY_NAMES[block.day_of_week]} at ${block.start_time.slice(0, 5)}`;
+}
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -123,7 +140,6 @@ export default function Home() {
   const greeting = getGreeting();
   const streakDays = stats?.streakDays ?? 0;
   const greetingSubtitle = getGreetingSubtitle(streakDays);
-  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
   const nextBlock = (() => {
     const now = new Date();
@@ -150,6 +166,12 @@ export default function Home() {
     if (diff <= 0) diff += 24 * 60;
     return diff;
   })() : 0;
+
+  const startScheduledSession = () => {
+    router.push(nextBlock?.books
+      ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}`
+      : `/reading-session?target_minutes=${nextBlockDuration}`);
+  };
 
   return (
     <View className="flex-1 bg-surface">
@@ -191,106 +213,62 @@ export default function Home() {
               </Pressable>
               <Pressable
                 onPress={() => setConfirmStart(true)}
+                className="bg-primary rounded-[24px] p-4 flex-row items-stretch active:opacity-95"
               >
-                <View className="rounded-[24px] overflow-hidden">
-                  {nextBlock.books?.cover_url ? (
-                    <ImageBackground
-                      source={{ uri: nextBlock.books.cover_url }}
-                      style={{ width: "100%", height: 440 }}
-                      contentFit="cover"
-                      recyclingKey={nextBlock.books.cover_url}
-                      transition={150}
-                    >
-                      <View className="flex-1 relative">
-                        <View className="absolute inset-0 bg-black/50" />
-                        <View className="flex-1 justify-between p-6">
-                          <View className="gap-1">
-                            <View className="flex-row items-center gap-2">
-                              <View className="p-1.5 bg-white/20 rounded-lg">
-                                <Icon name="schedule" size={14} color="#ffffff" />
-                              </View>
-                              <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming Session</Text>
-                            </View>
-                            <View className="gap-0.5">
-                              {nextBlock.books ? (
-                                <Text className="font-display text-[18px] leading-[22px] text-white" numberOfLines={1}>{nextBlock.books.title}</Text>
-                              ) : null}
-                              {nextBlock.books?.author ? (
-                                <Text className="text-white/70 text-[15px] text-caption">{nextBlock.books.author}</Text>
-                              ) : null}
-                            </View>
-                          </View>
-                          <View className="gap-3">
-                            <Text className="text-white/90 font-body-md">
-                              {(() => {
-                                const now = new Date();
-                                const today = now.getDay();
-                                const [h, m] = nextBlock.start_time.split(":").map(Number);
-
-                                if (nextBlock.day_of_week === today) {
-                                  const blockTime = new Date(); blockTime.setHours(h, m, 0);
-                                  const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
-                                  if (diff > 0) return `${nextBlock.start_time.slice(0, 5)} — in ${diff} min`;
-                                  return `Scheduled for ${nextBlock.start_time.slice(0, 5)}`;
-                                }
-                                const daysFromNow = (nextBlock.day_of_week + 7 - today) % 7;
-                                if (daysFromNow === 1) return `Tomorrow at ${nextBlock.start_time.slice(0, 5)}`;
-                                return `${DAY_NAMES[nextBlock.day_of_week]} at ${nextBlock.start_time.slice(0, 5)}`;
-                              })()}
-                            </Text>
-                            <View className="flex-row items-center gap-2">
-                              <View className="bg-white py-2.5 px-6 rounded-full flex-row items-center gap-2">
-                                <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
-                                <Icon name="arrow_forward" size={18} color="#52634c" />
-                              </View>
-                            </View>
-                          </View>
-                        </View>
+                <View
+                  className="w-[116px] h-[185px] mr-4"
+                  style={{
+                    
+                    shadowColor: "#101f0d",
+                    shadowOpacity: 0.3,
+                    shadowRadius: 10,
+                    shadowOffset: { width: 0, height: 4 },
+                    elevation: 6,
+                  }}
+                >
+                  <View className="flex-1 rounded-xl overflow-hidden bg-surface-variant">
+                    {nextBlock.books?.cover_url ? (
+                      <Image
+                        source={{ uri: nextBlock.books.cover_url }}
+                        style={{ width: "100%", height: "100%" }}
+                        contentFit="cover"
+                        recyclingKey={nextBlock.books.cover_url}
+                        transition={150}
+                      />
+                    ) : (
+                      <View className="flex-1 items-center justify-center">
+                        <Icon name="auto_stories" size={32} color="#747870" />
                       </View>
-                    </ImageBackground>
-                  ) : (
-                    <View className="bg-primary rounded-[24px] h-96">
-                      <View className="flex-1 justify-between p-6">
-                        <View className="gap-1">
-                          <View className="flex-row items-center gap-2">
-                            <View className="p-1.5 bg-white/20 rounded-lg">
-                              <Icon name="schedule" size={14} color="#ffffff" />
-                            </View>
-                            <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming</Text>
-                          </View>
-                          <Text className="font-display text-[18px] leading-[22px] text-white mt-1">{nextBlock.label || "Reading Session"}</Text>
-                          {nextBlock.books ? (
-                            <Text className="text-white/70 font-body-md" numberOfLines={1}>{nextBlock.books.title}</Text>
-                          ) : null}
-                        </View>
-                        <View className="gap-3">
-                          <Text className="text-white/90 font-body-md">
-                            {(() => {
-                              const now = new Date();
-                              const today = now.getDay();
-                              const [h, m] = nextBlock.start_time.split(":").map(Number);
+                    )}
+                  </View>
+                </View>
 
-                              if (nextBlock.day_of_week === today) {
-                                const blockTime = new Date(); blockTime.setHours(h, m, 0);
-                                const diff = Math.round((blockTime.getTime() - now.getTime()) / 60000);
-                                if (diff > 0) return `${nextBlock.start_time.slice(0, 5)} — in ${diff} min`;
-                                return `Scheduled for ${nextBlock.start_time.slice(0, 5)}`;
-                              }
-                              const daysFromNow = (nextBlock.day_of_week + 7 - today) % 7;
-                              if (daysFromNow === 1) return `Tomorrow at ${nextBlock.start_time.slice(0, 5)}`;
-                              return `${DAY_NAMES[nextBlock.day_of_week]} at ${nextBlock.start_time.slice(0, 5)}`;
-                            })()}
-                          </Text>
-                          <View className="flex-row items-center gap-2">
-                            <View className="bg-white py-2.5 px-6 rounded-full flex-row items-center gap-2">
-                              <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
-                              <Icon name="arrow_forward" size={18} color="#52634c" />
-                            </View>
-                          </View>
-                        </View>
-                      </View>
+                <View className="flex-1 justify-between py-1 gap-3">
+                  <View className="gap-1">
+                    <Text className="font-label-md text-white/80 uppercase tracking-wider">Upcoming</Text>
+                    <Text className="font-display text-[22px] leading-[27px] text-white" numberOfLines={3}>
+                      {nextBlock.books?.title ?? nextBlock.label ?? "Reading session"}
+                    </Text>
+                    {nextBlock.books?.author ? (
+                      <Text className="text-caption text-white/75" numberOfLines={1}>{nextBlock.books.author}</Text>
+                    ) : null}
+                  </View>
+
+                  <View className="gap-3">
+                    <View className="flex-row items-center gap-1.5">
+                      <Icon name="schedule" size={14} color="#ffffff" />
+                      <Text className="font-label-md text-white/90" numberOfLines={1}>
+                        {describeNextBlockTime(nextBlock)} · {nextBlockDuration} min
+                      </Text>
                     </View>
-                  )}
+                    <Pressable
+                      onPress={startScheduledSession}
+                      className="bg-white rounded-full py-3 px-6 flex-row items-center gap-2 self-start active:opacity-90"
+                    >
+                      <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
+                      <Icon name="arrow_forward" size={16} color="#52634c" />
+                    </Pressable>
+                  </View>
                 </View>
               </Pressable>
             </>
@@ -326,9 +304,9 @@ export default function Home() {
                   <Pressable
                     key={item.id}
                     onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
-                    className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[140px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
-                    <View className="w-full h-[350px] bg-surface-variant">
+                    <View className="w-full aspect-[2/3] bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
@@ -385,9 +363,9 @@ export default function Home() {
                   <Pressable
                     key={item.id}
                     onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
-                    className="w-[220] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[140px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
-                    <View className="w-full h-[350] bg-surface-variant">
+                    <View className="w-full aspect-[2/3] bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
@@ -418,8 +396,8 @@ export default function Home() {
               contentContainerStyle={{ gap: 16 }}
             >
               {[1, 2, 3].map((i) => (
-                <View key={i} className="w-[220px] gap-2">
-                  <SkeletonBlock className="w-full h-[350px] rounded-2xl" />
+                <View key={i} className="w-[140px] gap-2">
+                  <SkeletonBlock className="w-full aspect-[2/3] rounded-2xl" />
                   <SkeletonBlock className="w-full h-4" />
                   <SkeletonBlock className="w-2/3 h-3" />
                 </View>
@@ -444,9 +422,9 @@ export default function Home() {
                   <Pressable
                     key={d.key}
                     onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
-                    className="w-[220px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[140px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
                   >
-                    <View className="w-full h-[350px] bg-surface-variant">
+                    <View className="w-full aspect-[2/3] bg-surface-variant">
                       {d.cover_url ? (
                         <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                       ) : (
@@ -518,9 +496,7 @@ export default function Home() {
         onCancel={() => setConfirmStart(false)}
         onConfirm={() => {
           setConfirmStart(false);
-          router.push(nextBlock?.books
-            ? `/reading-session?book_id=${nextBlock.books.id}&target_minutes=${nextBlockDuration}`
-            : `/reading-session?target_minutes=${nextBlockDuration}`);
+          startScheduledSession();
         }}
       />
     </View>
