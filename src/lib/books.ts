@@ -6,7 +6,6 @@ export type Book = {
   title: string;
   author: string;
   cover_url: string;
-  genre: string;
   genres: string[];
   page_count: number;
   description: string;
@@ -28,15 +27,6 @@ export async function getBook(bookId: string): Promise<Book | null> {
     .single();
   return data;
 }
-
-// export async function getBookPageCount(bookId: string): Promise<{page_count: number} | null> {
-//   const { data } = await supabase 
-//     .from('books')
-//     .select('page_count')
-//     .eq('id', bookId)
-//     .single();
-//   return data
-// }
 
 export async function getBookByOlId(olId: string): Promise<Book | null> {
   const { data } = await supabase
