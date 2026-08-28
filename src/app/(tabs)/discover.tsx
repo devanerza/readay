@@ -210,7 +210,7 @@ export default function Discover() {
                         className="w-full"
                         onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                       >
-                        <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
+                        <View className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-surface-variant">
                           {d.cover_url ? (
                             <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                           ) : (
@@ -326,7 +326,7 @@ export default function Discover() {
                       className="w-full"
                       onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
                     >
-                      <View className="aspect-[2/3] w-full h-100 rounded-lg overflow-hidden bg-surface-variant">
+                      <View className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-surface-variant">
                         {d.cover_url ? (
                           <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                         ) : (
