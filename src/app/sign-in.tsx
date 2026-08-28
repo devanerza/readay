@@ -17,7 +17,7 @@ export default function SignInScreen() {
     if (!email.trim() || !password) return;
     setLoading(true);
     setError("");
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
@@ -25,9 +25,9 @@ export default function SignInScreen() {
     if (authError) {
       setError(authError.message);
     } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      getProfile(user.id)
+      const userId = data.user?.id;
+      if (!userId) return;
+      getProfile(userId)
         .then((profile) => {
           router.replace(profile?.display_name ? "/home" : ("/onboarding" as never));
         })
