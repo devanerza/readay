@@ -14,6 +14,7 @@ import TabSwitcher from "../../components/TabSwitcher";
 import EmptyState from "../../components/EmptyState";
 import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import ConfirmModal from "../../components/ConfirmModal";
+import ProgressBar from "../../components/ProgressBar";
 
 const TABS = [
   { key: "want_to_read", label: "Want to Read" },
@@ -143,10 +144,10 @@ export default function Library() {
                       </Text>
                     ) : null}
                     {item.status === "reading" && item.books?.page_count ? (
-                      <View className="flex-row items-center gap-2 mt-1">
-                        <View className="h-1 flex-1 bg-surface-variant rounded-full overflow-hidden">
-                          <View className="h-full bg-primary rounded-full" style={{ width: "0%" }} />
-                        </View>
+                      <View className="mt-1">
+                        <ProgressBar
+                          progress={item.books.page_count > 0 ? (item.current_page / item.books.page_count) * 100 : 0}
+                        />
                       </View>
                     ) : null}
                     {item.status === "finished" ? (
