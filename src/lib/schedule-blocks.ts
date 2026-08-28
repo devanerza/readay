@@ -81,7 +81,7 @@ export async function updateScheduleBlock(id: string, updates: Partial<{
   book_id: string | null;
 }>) {
   const payload: any = { ...updates };
-  if (updates.start_time && updates.duration_minutes) {
+  if (updates.start_time != null && updates.duration_minutes != null) {
     const endMinutes = (parseInt(updates.start_time.split(':')[0], 10) * 60 + parseInt(updates.start_time.split(':')[1], 10) + updates.duration_minutes);
     const endHour = Math.floor(endMinutes / 60) % 24;
     const endMin = endMinutes % 60;
