@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native"
 import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth-store";
 import { getBook, getBookByOlId } from "../lib/books";
 import { getBookDetails, buildCoverUrl, getWorkPageCount, getAuthorNames } from "../lib/open-library";
@@ -48,16 +48,25 @@ export default function BookDetail() {
 
   const { data: olPageCount } = useQuery({
     queryKey: ["ol-page-count", olId],
-    queryFn: async () => {
-      const count = await getWorkPageCount(olId!);
-      if (count && localBook?.id) {
-        await supabase.from('books').update({ page_count: count }).eq('id', localBook.id);
-        queryClient.invalidateQueries({ queryKey: ["local-book"] });
-      }
-      return count;
-    },
+    queryFn: () => getWorkPageCount(olId!),
     enabled: !!olId && cachedPageCount === 0,
   });
+
+  const backfillPageCount = useMutation({
+    mutationFn: async (count: number) => {
+      await supabase.from('books').update({ page_count: count }).eq('id', localBook!.id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["local-book"] }),
+  });
+
+  const hasBackfilledPages = React.useRef(false);
+
+  React.useEffect(() => {
+    if (olPageCount && localBook?.id && cachedPageCount === 0 && !hasBackfilledPages.current) {
+      hasBackfilledPages.current = true;
+      backfillPageCount.mutate(olPageCount);
+    }
+  }, [olPageCount, localBook?.id, cachedPageCount]);
 
   const pageCount = cachedPageCount || olPageCount || 0;
 
@@ -65,15 +74,26 @@ export default function BookDetail() {
     queryKey: ["ol-author", olId],
     queryFn: async () => {
       const names = await getAuthorNames(detail?.authors);
-      const name = names[0] ?? null;
-      if (name && localBook?.id && !localBook.author) {
-        await supabase.from('books').update({ author: name }).eq('id', localBook.id);
-        queryClient.invalidateQueries({ queryKey: ["local-book"] });
-      }
-      return name;
+      return names[0] ?? null;
     },
     enabled: !!olId && !!detail && !localBook?.author,
   });
+
+  const backfillAuthor = useMutation({
+    mutationFn: async (name: string) => {
+      await supabase.from('books').update({ author: name }).eq('id', localBook!.id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["local-book"] }),
+  });
+
+  const hasBackfilledAuthor = React.useRef(false);
+
+  React.useEffect(() => {
+    if (olAuthor && localBook?.id && !localBook.author && !hasBackfilledAuthor.current) {
+      hasBackfilledAuthor.current = true;
+      backfillAuthor.mutate(olAuthor);
+    }
+  }, [olAuthor, localBook?.id, localBook?.author]);
 
   const displayAuthor = localBook?.author ?? olAuthor ?? null;
 
