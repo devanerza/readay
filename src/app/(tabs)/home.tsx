@@ -86,7 +86,7 @@ export default function Home() {
   });
 
   const { data: wantToReadItems = [], isLoading: wantLoading, refetch: refetchWant, isRefetching: refetchingWant } = useQuery({
-    queryKey: ["want-to-read", userId],
+    queryKey: ["queue-items", userId, "want_to_read"],
     queryFn: () => getQueueItems(userId!, 'want_to_read'),
     enabled: !!userId,
   });
@@ -98,7 +98,7 @@ export default function Home() {
   });
 
   const { data: finishedBooks, isLoading: finishedLoading, refetch: refetchFinished, isRefetching: refetchingFinished } = useQuery({
-    queryKey: ["finished-books", userId],
+    queryKey: ["queue-items", userId, "finished"],
     queryFn: () => getQueueItems(userId!, 'finished'),
     enabled: !!userId,
   });

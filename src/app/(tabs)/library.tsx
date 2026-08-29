@@ -45,12 +45,7 @@ export default function Library() {
       updateQueueItemStatus(id, status),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["queue-items", userId] });
-      queryClient.invalidateQueries({ queryKey: ["queue-count", userId] });
-      queryClient.invalidateQueries({ queryKey: ["finished-books", userId] });
-      queryClient.invalidateQueries({ queryKey: ["currently-reading", userId] });
-      queryClient.invalidateQueries({ queryKey: ["next-read", userId] });
       queryClient.invalidateQueries({ queryKey: ["all-reading", userId] });
-      queryClient.invalidateQueries({ queryKey: ["want-to-read", userId] });
       if (variables.status === 'reading') {
         const item = filteredItems.find((i) => i.id === variables.id);
         if (item) router.push(`/reading-session?book_id=${item.book_id}`);
@@ -63,10 +58,7 @@ export default function Library() {
     mutationFn: (id: string) => deleteQueueItem(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["queue-items", userId] });
-      queryClient.invalidateQueries({ queryKey: ["queue-count", userId] });
       queryClient.invalidateQueries({ queryKey: ["all-reading", userId] });
-      queryClient.invalidateQueries({ queryKey: ["want-to-read", userId] });
-      queryClient.invalidateQueries({ queryKey: ["finished-books", userId] });
     },
     onError: () => Alert.alert("Error", "Could not remove book."),
   });

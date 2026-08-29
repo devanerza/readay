@@ -60,7 +60,7 @@ export default function Profile() {
   });
 
   const { data: finishedBooks, refetch: refetchFinished, isRefetching: refetchingFinished } = useQuery({
-    queryKey: ["finished-books", userId],
+    queryKey: ["queue-items", userId, "finished"],
     queryFn: () => getQueueItems(userId!, 'finished'),
     enabled: !!userId,
   });
