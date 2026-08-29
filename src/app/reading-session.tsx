@@ -88,7 +88,13 @@ export default function ReadingSession() {
   const handleEndSession = async () => {
     if (!userId) return;
     const duration = elapsedSec();
-    if (duration < 10) { router.back(); return; }
+    if (duration < 10) {
+      Alert.alert("Session too short", "Sessions under 10 seconds won't be saved.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Discard", style: "destructive", onPress: () => router.back() },
+      ]);
+      return;
+    }
 
     setSaving(true);
     try {
