@@ -52,9 +52,10 @@ export async function generateWeeklyInsight(userId: string): Promise<WeeklyInsig
 
   let streakDays = 0;
   for (const day of uniqueDays) {
-    const d = new Date(day);
+    const [y, m, d] = day.split('-').map(Number);
+    const localDay = new Date(y, m - 1, d);
     const expected = subDays(today, streakDays);
-    if (differenceInDays(expected, d) === 0) streakDays++;
+    if (differenceInDays(expected, localDay) === 0) streakDays++;
     else break;
   }
 
