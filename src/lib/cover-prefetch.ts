@@ -6,8 +6,7 @@ export function prefetchCovers(urls: (string | null | undefined)[], limit = 6): 
   let queued = 0;
   for (const url of urls) {
     if (!url || prefetched.has(url)) continue;
-    prefetched.add(url);
-    Image.prefetch(url).catch(() => {});
+    Image.prefetch(url).then(() => prefetched.add(url)).catch(() => {});
     if (++queued >= limit) break;
   }
 }
