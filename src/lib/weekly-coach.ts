@@ -10,8 +10,8 @@ export type WeeklyInsight = {
   trend: 'up' | 'down' | 'stable';
 };
 
-function pick<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+function pick<T>(arr: T[], seed: number): T {
+  return arr[Math.abs(seed) % arr.length];
 }
 
 export async function generateWeeklyInsight(userId: string): Promise<WeeklyInsight> {
@@ -90,14 +90,16 @@ export async function generateWeeklyInsight(userId: string): Promise<WeeklyInsig
     ],
   };
 
+  const seed = consistencyScore + weekStart.getDate();
+
   const recommendation = consistencyScore >= 70
-    ? pick(recommendationTemplates.high)
+    ? pick(recommendationTemplates.high, seed)
     : consistencyScore >= 40
-    ? pick(recommendationTemplates.medium)
-    : pick(recommendationTemplates.low);
+    ? pick(recommendationTemplates.medium, seed)
+    : pick(recommendationTemplates.low, seed);
 
   return {
-    narrative: pick(narrativeTemplates[trend]),
+    narrative: pick(narrativeTemplates[trend], seed),
     consistencyScore,
     streakDays,
     recommendation,
