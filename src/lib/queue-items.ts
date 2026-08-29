@@ -37,31 +37,6 @@ export async function getQueueItems(userId: string, status?: string): Promise<Qu
   return data ?? [];
 }
 
-export async function getNextRead(userId: string): Promise<QueueItemWithBook | null> {
-  const { data } = await supabase
-    .from('queue_items')
-    .select('*, books(*)')
-    .eq('user_id', userId)
-    .eq('status', 'want_to_read')
-    .order('rank', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  return data;
-}
-
-export async function getCurrentlyReading(userId: string): Promise<QueueItemWithBook | null> {
-  const { data } = await supabase
-    .from('queue_items')
-    .select('*, books(*)')
-    .eq('user_id', userId)
-    .eq('status', 'reading')
-    .limit(1)
-    .maybeSingle();
-
-  return data;
-}
-
 export async function getAllCurrentlyReading(userId: string): Promise<QueueItemWithBook[]> {
   const { data } = await supabase
     .from('queue_items')

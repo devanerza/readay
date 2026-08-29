@@ -31,24 +31,6 @@ export async function getScheduleBlocks(userId: string): Promise<ScheduleBlockWi
   return data ?? [];
 }
 
-export async function getUpcomingBlock(userId: string): Promise<ScheduleBlockWithBook | null> {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const time = now.toTimeString().slice(0, 5);
-
-  const { data } = await supabase
-    .from('schedule_blocks')
-    .select('*, books(id, title, author, cover_url)')
-    .eq('user_id', userId)
-    .gte('day_of_week', dayOfWeek)
-    .order('day_of_week', { ascending: true })
-    .order('start_time', { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  return data;
-}
-
 export async function createScheduleBlock(block: {
   user_id: string;
   day_of_week: number;

@@ -23,16 +23,3 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .maybeSingle();
   return data;
 }
-
-export async function createProfile(userId: string, data: OnboardingData) {
-  const { error } = await supabase.from('profiles').insert({
-    user_id: userId,
-    ...data,
-  });
-  if (error) throw error;
-}
-
-export async function updateProfile(userId: string, data: Partial<OnboardingData>) {
-  const { error } = await supabase.from('profiles').update(data).eq('user_id', userId);
-  if (error) throw error;
-}
