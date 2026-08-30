@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useForm, Controller } from "react-hook-form";
 import { supabase } from "../lib/supabase";
 import Icon from "../components/Icon";
+import { Colors } from "../constants/colors";
 
 const GENRES = [
   "Mystery", "Thriller", "Fantasy", "Sci-Fi", "Horror", "Romance",
@@ -109,7 +110,7 @@ export default function OnboardingScreen() {
               hitSlop={12}
               className="w-10 h-10 rounded-full bg-surface-variant items-center justify-center"
             >
-              <Icon name="arrow_back" size={20} color="#444841" />
+              <Icon name="arrow_back" size={20} color="Colors.onSurfaceVariant" />
             </Pressable>
           ) : (
             <View className="w-10 h-10" />
@@ -151,7 +152,7 @@ export default function OnboardingScreen() {
                     <TextInput
                       className="font-body-md text-on-surface"
                       placeholder="e.g. Alex"
-                      placeholderTextColor="#747870"
+                      placeholderTextColor="Colors.outline"
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -194,7 +195,7 @@ export default function OnboardingScreen() {
                     <TextInput
                       className="font-body-md text-on-surface"
                       placeholder="Books per year"
-                      placeholderTextColor="#747870"
+                      placeholderTextColor="Colors.outline"
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}

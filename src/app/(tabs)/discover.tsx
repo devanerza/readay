@@ -12,6 +12,7 @@ import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull
 import TopAppBar from "../../components/TopAppBar";
 import Icon from "../../components/Icon";
 import { SkeletonBlock } from "../../components/Skeleton";
+import { Colors } from "../../constants/colors";
 
 const GENRES = [
   { label: "All Curated" },
@@ -115,7 +116,7 @@ export default function Discover() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar 
         title="Discover" 
-        rightActions={[{ icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) }]} />
+        rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant, onPress: () => router.push("/settings" as never) }]} />
 
         <ScrollView
           className="flex-1 px-margin-page"
@@ -128,11 +129,11 @@ export default function Discover() {
           {/* Search Bar */}
           <View className="mt-2">
             <View className="bg-surface-container-low px-4 py-3 rounded-xl flex-row items-center gap-3">
-              <Icon name="search" size={20} color="#747870" />
+              <Icon name="search" size={20} color={Colors.outline} />
               <TextInput
                 className="flex-1 font-label-md text-on-surface"
                 placeholder="Search curated titles..."
-                placeholderTextColor="#747870"
+                placeholderTextColor={Colors.outline}
                 value={query}
                 onChangeText={setQuery}
                 returnKeyType="search"
@@ -368,7 +369,7 @@ function FeatureCard({
         recyclingKey={coverUrl ?? undefined}
         transition={150}
         style={[
-          coverUrl ? {} : { backgroundColor: "#e0e3db" },
+          coverUrl ? {} : { backgroundColor: Colors.coverPlaceholder },
           { width: "100%", height: 240, justifyContent: "flex-end" },
         ]}
       >

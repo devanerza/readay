@@ -18,6 +18,7 @@ import { BookDetailSkeleton } from "../components/SkeletonScreens";
 import ConfirmModal from "../components/ConfirmModal";
 import Toast from "../components/Toast";
 import Icon from "../components/Icon";
+import { Colors } from "../constants/colors";
 
 export default function BookDetail() {
   const router = useRouter();
@@ -157,9 +158,9 @@ export default function BookDetail() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           onBack={() => router.back()}
-          rightActions={[
-            { icon: "share", color: "#444841" },
-            { icon: "bookmark", color: "#444841" },
+            rightActions={[
+            { icon: "share", color: Colors.onSurfaceVariant },
+            { icon: "bookmark", color: Colors.onSurfaceVariant },
           ]}
         />
 
@@ -204,7 +205,7 @@ export default function BookDetail() {
                 <View className="flex-1 bg-surface-container-low p-4 py-2 rounded-xl">
                   <Text className="text-caption text-outline uppercase tracking-wider mb-1">Pages</Text>
                   <View className="flex-row items-center gap-2">
-                    <Icon name="auto_stories" size={18} color="#52634c" />
+                    <Icon name="auto_stories" size={18} color={Colors.primary} />
                     <Text className="font-title-lg text-body-md text-primary">
                       {pageCount > 0 ? pageCount : "—"}
                     </Text>
@@ -213,7 +214,7 @@ export default function BookDetail() {
                 <View className="flex-1 bg-surface-container-low p-4 py-2 rounded-xl">
                   <Text className="text-caption text-outline uppercase tracking-wider mb-1">Released</Text>
                   <View className="flex-row items-center gap-2">
-                    <Icon name="calendar_month" size={18} color="#52634c" />
+                    <Icon name="calendar_month" size={18} color={Colors.primary} />
                     <Text className="font-title-lg text-body-md text-primary">{detail?.first_publish_date ?? "—"}</Text>
                   </View>
                 </View>
@@ -225,7 +226,7 @@ export default function BookDetail() {
                   onPress={handleStartReading}
                   className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95"
                 >
-                  <Icon name="auto_stories" size={20} color="#ffffff" filled />
+                  <Icon name="auto_stories" size={20} color={Colors.onPrimary} filled />
                   <Text className="text-white font-label-md">Start Reading</Text>
                 </Pressable>
               ) : (
@@ -234,7 +235,7 @@ export default function BookDetail() {
                   disabled={adding}
                   className="w-full py-4 bg-primary rounded-full items-center flex-row justify-center gap-2 active:scale-95 disabled:opacity-50"
                 >
-                  <Icon name={adding ? "check" : "book_2"} size={20} color="#ffffff" filled />
+                  <Icon name={adding ? "check" : "book_2"} size={20} color={Colors.onPrimary} filled />
                   <Text className="text-white font-label-md">{adding ? "Adding..." : "Add to Library"}</Text>
                 </Pressable>
               )}
@@ -246,7 +247,7 @@ export default function BookDetail() {
             <View className="px-margin-page mt-8">
               <View className="flex-row items-center gap-3 mb-4">
                 <View className="w-10 h-10 rounded-full bg-secondary-container items-center justify-center">
-                  <Icon name="info" size={18} color="#7a532a" />
+                  <Icon name="info" size={18} color={Colors.secondary} />
                 </View>
                 <Text className="font-headline-md text-on-surface">About this book</Text>
               </View>

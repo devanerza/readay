@@ -1,5 +1,6 @@
 import React from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Colors } from "../constants/colors";
 
 // Maps the Material Symbols names used in the original design to the closest
 // MaterialIcons glyph name available in @expo/vector-icons.
@@ -52,7 +53,7 @@ type Props = {
   filled?: boolean;
 };
 
-export default function Icon({ name, size = 24, color = "#1b1c1a", filled }: Props) {
+export default function Icon({ name, size = 24, color = Colors.onSurface, filled }: Props) {
   const glyph = ICON_MAP[name] ?? "help-outline";
   return <MaterialIcons name={glyph} size={size} color={color} style={filled ? { opacity: 1 } : undefined} />;
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import Icon from "./Icon";
+import { Colors } from "../constants/colors";
 
 type Props = {
   title: string;
@@ -15,7 +16,7 @@ export default function SectionHeader({ title, actionLabel, onAction }: Props) {
       {actionLabel && onAction && (
         <Pressable className="flex-row items-center gap-1" onPress={onAction}>
           <Text className="text-on-surface-variant font-label-md">{actionLabel}</Text>
-          <Icon name="chevron_right" size={16} color="#444841" />
+          <Icon name="chevron_right" size={16} color={Colors.onSurfaceVariant} />
         </Pressable>
       )}
     </View>

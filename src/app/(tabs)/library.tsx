@@ -15,6 +15,7 @@ import EmptyState from "../../components/EmptyState";
 import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import ConfirmModal from "../../components/ConfirmModal";
 import ProgressBar from "../../components/ProgressBar";
+import { Colors } from "../../constants/colors";
 
 const TABS = [
   { key: "want_to_read", label: "Want to Read" },
@@ -79,7 +80,7 @@ export default function Library() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           title="Library"
-          rightActions={[{ icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) }]}
+          rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant, onPress: () => router.push("/settings" as never) }]}
         />
 
         <TabSwitcher

@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Modal, Pressable } from "react-native";
 import Icon, { type IconName } from "./Icon";
+import { Colors } from "../constants/colors";
 
 export default function ConfirmModal({
   visible,
@@ -22,7 +23,7 @@ export default function ConfirmModal({
   onConfirm: () => void;
 }) {
   const isPrimary = tone === "primary";
-  const iconColor = isPrimary ? "#52634c" : "#ba1a1a";
+  const iconColor = isPrimary ? Colors.primary : Colors.error;
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View className="flex-1 bg-black/40">

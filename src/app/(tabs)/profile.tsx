@@ -14,6 +14,7 @@ import StatTile from "../../components/StatTile";
 import { ProfileSkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
 import ReflectionCard from "../../components/ReflectionCard";
+import { Colors } from "../../constants/colors";
 
 const seasonMantras = [
   "Spring has sprung, and so has your reading",
@@ -151,13 +152,13 @@ export default function Profile() {
               <ReflectionCard
                 icon="auto_awesome"
                 iconBg="bg-primary-fixed"
-                iconColor="#52634c"
+                iconColor={Colors.primary}
                 text={insight?.narrative ?? "Start a reading session to get your personalized weekly insight."}
               />
               <ReflectionCard
                 icon="lightbulb"
                 iconBg="bg-secondary-fixed"
-                iconColor="#7d562d"
+                iconColor={Colors.secondary}
                 text={insight?.recommendation ?? "Log your first session and check back here for tailored recommendations."}
               />
             </View>
@@ -172,13 +173,13 @@ export default function Profile() {
             <View className="flex-row gap-4">
               <StatTile
                 icon="schedule"
-                iconColor="#7d562d"
+                iconColor={Colors.secondary}
                 value={stats ? `${Math.floor(stats.totalMinutes / 60)}h` : "—"}
                 label="Reading Time"
               />
               <StatTile
                 icon="auto_stories"
-                iconColor="#52634c"
+                iconColor={Colors.primary}
                 value={stats ? stats.totalPages.toLocaleString() : "—"}
                 label="Pages Turned"
               />

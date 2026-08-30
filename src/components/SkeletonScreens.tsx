@@ -3,12 +3,13 @@ import { View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SkeletonBlock, SkeletonText, SkeletonCover } from "./Skeleton";
 import TopAppBar from "./TopAppBar";
+import { Colors } from "../constants/colors";
 
 export function HomeSkeleton() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant }]} />
         <ScrollView
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
@@ -66,7 +67,7 @@ export function LibrarySkeleton() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar title="Library" rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar title="Library" rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant }]} />
         <View className="flex-row gap-2 px-margin-page py-3">
           {[1, 2, 3].map((i) => (
             <SkeletonBlock key={i} className="flex-1 h-10 rounded-full" />
@@ -99,7 +100,7 @@ export function ProfileSkeleton() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant }]} />
         <ScrollView
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 32 }}
@@ -214,8 +215,8 @@ export function BookDetailSkeleton() {
         <TopAppBar
           onBack={() => {}}
           rightActions={[
-            { icon: "share", color: "#444841" },
-            { icon: "bookmark", color: "#444841" },
+            { icon: "share", color: Colors.onSurfaceVariant },
+            { icon: "bookmark", color: Colors.onSurfaceVariant },
           ]}
         />
         <ScrollView
@@ -343,7 +344,7 @@ export function DiscoverSkeleton() {
   return (
     <View className="flex-1 bg-background">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar rightActions={[{ icon: "settings", color: "#444841" }]} />
+        <TopAppBar rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant }]} />
         <ScrollView
           className="flex-1 px-margin-page"
           contentContainerStyle={{ paddingBottom: 120, gap: 28 }}

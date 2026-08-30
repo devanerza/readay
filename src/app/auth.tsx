@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { getProfile } from "../lib/profiles";
 import Icon from "../components/Icon";
+import { Colors } from "../constants/colors";
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -46,7 +47,7 @@ export default function AuthScreen() {
         >
           <View className="items-center mb-10">
             <View className="w-16 h-16 rounded-full bg-primary-container/20 items-center justify-center mb-6">
-              <Icon name="auto_stories" size={32} color="#52634c" />
+              <Icon name="auto_stories" size={32} color="Colors.primary" />
             </View>
             <Text className="font-display text-headline-lg-mobile text-on-surface text-center">
               Create your account
@@ -60,7 +61,7 @@ export default function AuthScreen() {
             <TextInput
               className="font-body-md text-on-surface"
               placeholder="you@example.com"
-              placeholderTextColor="#747870"
+              placeholderTextColor="Colors.outline"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -73,7 +74,7 @@ export default function AuthScreen() {
             <TextInput
               className="font-body-md text-on-surface"
               placeholder="Password (6+ characters)"
-              placeholderTextColor="#747870"
+              placeholderTextColor="Colors.outline"
               value={password}
               onChangeText={setPassword}
               secureTextEntry

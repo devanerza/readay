@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
 import Icon, { type IconName } from "./Icon";
+import { Colors } from "../constants/colors";
 
 type Props = {
   icon: IconName;
@@ -11,7 +12,7 @@ type Props = {
   onCta?: () => void;
 };
 
-export default function EmptyState({ icon, iconColor = "#747870", title, subtitle, cta, onCta }: Props) {
+export default function EmptyState({ icon, iconColor = Colors.outline, title, subtitle, cta, onCta }: Props) {
   return (
     <View className="flex-1 items-center justify-center py-20 px-margin-page">
       <View className="w-16 h-16 rounded-full bg-surface-variant items-center justify-center mb-6">

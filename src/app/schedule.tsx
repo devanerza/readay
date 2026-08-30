@@ -13,6 +13,7 @@ import { ensureNotificationPermission, hasNotificationPermission, syncBlockRemin
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
 import Icon from "../components/Icon";
 import { ScheduleSkeleton } from "../components/SkeletonScreens";
+import { Colors } from "../constants/colors";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -156,7 +157,7 @@ export default function Schedule() {
         <View className="w-full flex-row justify-between items-center px-margin-page py-4">
           <View className="flex-row items-center gap-4">
             <Pressable onPress={() => router.back()} className="p-2 -ml-2 active:bg-surface-container rounded-full">
-              <Icon name="arrow_back" color="#52634c" />
+              <Icon name="arrow_back" color={Colors.primary} />
             </Pressable>
             <Text className="font-display text-headline-md text-primary ml-2">Schedule</Text>
           </View>
@@ -164,7 +165,7 @@ export default function Schedule() {
             onPress={() => { resetForm(); setShowForm(true); }}
             className="w-10 h-10 bg-primary rounded-full items-center justify-center active:scale-90"
           >
-            <Icon name="add" size={20} color="#ffffff" />
+            <Icon name="add" size={20} color={Colors.onPrimary} />
           </Pressable>
         </View>
 
@@ -188,7 +189,7 @@ export default function Schedule() {
               }} />
             )) : (
               <View className="bg-surface-container-low rounded-2xl p-6 items-center gap-3">
-                <Icon name="schedule" size={32} color="#747870" />
+                <Icon name="schedule" size={32} color={Colors.outline} />
                 <Text className="font-body-md text-on-surface-variant text-center">No reading blocks scheduled for today.</Text>
                 <Pressable onPress={() => { resetForm(); setShowForm(true); }} className="mt-2">
                   <Text className="text-primary font-label-md">Add a block</Text>
@@ -218,7 +219,7 @@ export default function Schedule() {
               </View>
             ) : (
               <View className="bg-surface-container-low rounded-2xl p-6 items-center gap-3">
-                <Icon name="schedule" size={32} color="#747870" />
+                <Icon name="schedule" size={32} color={Colors.outline} />
                 <Text className="font-body-md text-on-surface-variant text-center">No reading blocks set.</Text>
                 <Pressable onPress={() => { resetForm(); setShowForm(true); }} className="mt-2">
                   <Text className="text-primary font-label-md">Add your first block</Text>
@@ -233,7 +234,7 @@ export default function Schedule() {
               <View className="flex-row justify-between items-center">
                 <Text className="font-title-lg text-on-surface">{editingId ? "Edit Block" : "New Block"}</Text>
                 <Pressable onPress={resetForm} className="p-1">
-                  <Icon name="close" size={20} color="#444841" />
+                  <Icon name="close" size={20} color={Colors.onSurfaceVariant} />
                 </Pressable>
               </View>
 
@@ -246,7 +247,7 @@ export default function Schedule() {
                     value={form.label}
                     onChangeText={(v) => setForm((f) => ({ ...f, label: v }))}
                     placeholder="Evening Reading"
-                    placeholderTextColor="#747870"
+                    placeholderTextColor={Colors.outline}
                   />
                 </View>
               </View>
@@ -272,7 +273,7 @@ export default function Schedule() {
                       ) : null}
                     </View>
                     <Pressable onPress={() => setForm((f) => ({ ...f, book_id: null }))} className="p-1">
-                      <Icon name="close" size={16} color="#747870" />
+                      <Icon name="close" size={16} color={Colors.outline} />
                     </Pressable>
                   </View>
                 ) : (
@@ -280,7 +281,7 @@ export default function Schedule() {
                     onPress={() => setShowBookPicker(true)}
                     className="bg-surface rounded-xl px-4 py-3.5 flex-row items-center gap-3 active:bg-surface-variant"
                   >
-                    <Icon name="book_2" size={20} color="#747870" />
+                    <Icon name="book_2" size={20} color={Colors.outline} />
                     <Text className="font-body-md text-on-surface-variant">Pick a book from your queue</Text>
                   </Pressable>
                 )}
@@ -314,7 +315,7 @@ export default function Schedule() {
                       value={form.start_hour}
                       onChangeText={(v) => setForm((f) => ({ ...f, start_hour: v.replace(/\D/g, "").slice(0, 2) }))}
                       placeholder="19"
-                      placeholderTextColor="#747870"
+                      placeholderTextColor={Colors.outline}
                       keyboardType="number-pad"
                       maxLength={2}
                     />
@@ -326,7 +327,7 @@ export default function Schedule() {
                       value={form.start_minute}
                       onChangeText={(v) => setForm((f) => ({ ...f, start_minute: v.replace(/\D/g, "").slice(0, 2) }))}
                       placeholder="00"
-                      placeholderTextColor="#747870"
+                      placeholderTextColor={Colors.outline}
                       keyboardType="number-pad"
                       maxLength={2}
                     />
@@ -343,7 +344,7 @@ export default function Schedule() {
                     value={form.duration_minutes}
                     onChangeText={(v) => setForm((f) => ({ ...f, duration_minutes: v.replace(/\D/g, "").slice(0, 3) }))}
                     placeholder="20"
-                    placeholderTextColor="#747870"
+                    placeholderTextColor={Colors.outline}
                     keyboardType="number-pad"
                   />
                 </View>
@@ -369,7 +370,7 @@ export default function Schedule() {
               <View className="flex-row justify-between items-center px-6 py-4 border-b border-surface-variant/30">
                 <Text className="font-display text-title-lg text-on-surface">Pick a Book</Text>
                 <Pressable onPress={() => setShowBookPicker(false)} className="p-1">
-                  <Icon name="close" size={20} color="#444841" />
+                  <Icon name="close" size={20} color={Colors.onSurfaceVariant} />
                 </Pressable>
               </View>
               <FlatList
@@ -404,7 +405,7 @@ export default function Schedule() {
                 )}
                 ListEmptyComponent={
                   <View className="items-center py-12 gap-3">
-                    <Icon name="book_2" size={32} color="#747870" />
+                    <Icon name="book_2" size={32} color={Colors.outline} />
                     <Text className="font-body-md text-on-surface-variant text-center">No books in your queue yet.{'\n'}Add books from Discover first.</Text>
                   </View>
                 }
@@ -433,7 +434,7 @@ function BlockCard({ block, onEdit, onDelete }: { block: ScheduleBlockWithBook; 
         </View>
       ) : (
         <View className={`w-12 h-12 rounded-xl items-center justify-center shrink-0 ${isUpcoming ? "bg-primary/10" : "bg-surface-variant"}`}>
-          <Icon name="schedule" size={24} color={isUpcoming ? "#52634c" : "#747870"} />
+          <Icon name="schedule" size={24} color={isUpcoming ? Colors.primary : Colors.outline} />
         </View>
       )}
       <View className="flex-1 gap-0.5">
@@ -447,10 +448,10 @@ function BlockCard({ block, onEdit, onDelete }: { block: ScheduleBlockWithBook; 
       </View>
       <View className="flex-row gap-2">
         <Pressable onPress={onEdit} className="p-2 active:bg-surface-variant rounded-full">
-          <Icon name="edit" size={18} color="#444841" />
+          <Icon name="edit" size={18} color={Colors.onSurfaceVariant} />
         </Pressable>
         <Pressable onPress={onDelete} className="p-2 active:bg-surface-variant rounded-full">
-          <Icon name="delete" size={18} color="#ba1a1a" />
+          <Icon name="delete" size={18} color={Colors.error} />
         </Pressable>
       </View>
     </View>

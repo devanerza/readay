@@ -18,6 +18,7 @@ import { SkeletonBlock } from "../../components/Skeleton";
 import { BookCardVertical } from "../../components/BookCard";
 import ConfirmModal from "../../components/ConfirmModal";
 import Icon from "../../components/Icon";
+import { Colors } from "../../constants/colors";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -179,7 +180,7 @@ export default function Home() {
         <TopAppBar
           logo={require("../../../assets/images/readay-header.png")}
           rightActions={[
-            { icon: "settings", color: "#444841", onPress: () => router.push("/settings" as never) },
+            { icon: "settings", color: Colors.onSurfaceVariant, onPress: () => router.push("/settings" as never) },
           ]}
         />
 
@@ -208,7 +209,7 @@ export default function Home() {
                 <Text className="font-headline-lg-mobile text-on-surface">Reading Session</Text>
                 <View className="flex-row items-center gap-1">
                   <Text className="text-primary font-label-md">Manage Schedule</Text>
-                  <Icon name="chevron_right" size={18} color="#52634c" />
+                  <Icon name="chevron_right" size={18} color=Colors.primary />
                 </View>
               </Pressable>
               <Pressable
@@ -219,7 +220,7 @@ export default function Home() {
                   className="w-[116px] h-[185px] mr-4"
                   style={{
                     
-                    shadowColor: "#101f0d",
+                    shadowColor: Colors.shadowDark,
                     shadowOpacity: 0.3,
                     shadowRadius: 10,
                     shadowOffset: { width: 0, height: 4 },
@@ -237,7 +238,7 @@ export default function Home() {
                       />
                     ) : (
                       <View className="flex-1 items-center justify-center">
-                        <Icon name="auto_stories" size={32} color="#747870" />
+                        <Icon name="auto_stories" size={32} color=Colors.outline />
                       </View>
                     )}
                   </View>
@@ -256,7 +257,7 @@ export default function Home() {
 
                   <View className="gap-3">
                     <View className="flex-row items-center gap-1.5">
-                      <Icon name="schedule" size={14} color="#ffffff" />
+                      <Icon name="schedule" size={14} color=Colors.onPrimary />
                       <Text className="font-label-md text-white/90" numberOfLines={1}>
                         {describeNextBlockTime(nextBlock)} · {nextBlockDuration} min
                       </Text>
@@ -266,7 +267,7 @@ export default function Home() {
                       className="bg-white rounded-full py-3 px-6 flex-row items-center gap-2 self-start active:opacity-90"
                     >
                       <Text className="text-primary font-label-lg font-semibold">Start Session</Text>
-                      <Icon name="arrow_forward" size={16} color="#52634c" />
+                      <Icon name="arrow_forward" size={16} color=Colors.primary />
                     </Pressable>
                   </View>
                 </View>
@@ -278,7 +279,7 @@ export default function Home() {
               className="bg-surface-container-low rounded-[24px] p-8 items-center gap-4 active:bg-surface-container"
             >
               <View className="p-3 bg-primary/10 rounded-2xl">
-                <Icon name="schedule" size={28} color="#52634c" />
+                <Icon name="schedule" size={28} color=Colors.primary />
               </View>
               <View className="items-center gap-1">
                 <Text className="font-title-lg text-lg text-on-surface">Set Your Reading Schedule</Text>
@@ -311,7 +312,7 @@ export default function Home() {
                         <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
                         <View className="flex-1 items-center justify-center">
-                          <Icon name="auto_stories" size={36} color="#747870" />
+                          <Icon name="auto_stories" size={36} color=Colors.outline />
                         </View>
                       )}
                     </View>
@@ -321,7 +322,7 @@ export default function Home() {
                         <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{item.books.author}</Text>
                       ) : null}
                       <View className="flex-row items-center gap-1 pt-1">
-                        <Icon name="play_arrow" size={14} color="#52634c" filled />
+                        <Icon name="play_arrow" size={14} color=Colors.primary filled />
                         <Text className="font-label-md text-primary text-xs">Resume</Text>
                       </View>
                     </View>
@@ -334,7 +335,7 @@ export default function Home() {
               onPress={() => router.push("/discover" as never)}
               className="rounded-[24px] bg-surface-container-low p-8 items-center gap-3 active:bg-surface-container"
             >
-              <Icon name="auto_stories" size={40} color="#747870" />
+              <Icon name="auto_stories" size={40} color=Colors.outline />
               <Text className="font-title-lg text-on-surface text-center">Nothing being read yet</Text>
               <Text className="font-body-md text-[12px] text-on-surface-variant text-center">
                 Add a book to your queue to start reading.
@@ -350,7 +351,7 @@ export default function Home() {
                 <Text className="font-headline-md text-on-surface">Want to Read</Text>
                 <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/library" as never)}>
                   <Text className="text-on-surface-variant font-label-md">See All</Text>
-                  <Icon name="chevron_right" size={16} color="#444841" />
+                  <Icon name="chevron_right" size={16} color=Colors.onSurfaceVariant />
                 </Pressable>
               </View>
               <ScrollView
@@ -370,7 +371,7 @@ export default function Home() {
                         <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
                         <View className="flex-1 items-center justify-center">
-                          <Icon name="auto_stories" size={36} color="#747870" />
+                          <Icon name="auto_stories" size={36} color=Colors.outline />
                         </View>
                       )}
                     </View>
@@ -380,7 +381,7 @@ export default function Home() {
                         <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{item.books.author}</Text>
                       ) : null}
                       <View className="flex-row items-center gap-1 pt-1">
-                        <Icon name="play_arrow" size={14} color="#52634c" filled />
+                        <Icon name="play_arrow" size={14} color=Colors.primary filled />
                         <Text className="font-label-md text-primary text-xs">Start Reading</Text>
                       </View>
                     </View>
@@ -409,7 +410,7 @@ export default function Home() {
                 <Text className="font-headline-md text-on-surface">Recommended for You</Text>
                 <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/discover" as never)}>
                   <Text className="text-on-surface-variant font-label-md">See All</Text>
-                  <Icon name="chevron_right" size={16} color="#444841" />
+                  <Icon name="chevron_right" size={16} color=Colors.onSurfaceVariant />
                 </Pressable>
               </View>
               <ScrollView
@@ -448,7 +449,7 @@ export default function Home() {
               onPress={() => router.push("/discover" as never)}
               className="rounded-[24px] bg-surface-container-low p-8 items-center gap-3 active:bg-surface-container"
             >
-              <Icon name="auto_stories" size={40} color="#747870" />
+              <Icon name="auto_stories" size={40} color=Colors.outline />
               <Text className="font-title-lg text-on-surface text-center">Your queue is empty</Text>
               <Text className="font-body-md text-on-surface-variant text-center">
                 Discover books to add to your reading list.
@@ -464,7 +465,7 @@ export default function Home() {
                 <Text className="font-headline-md text-on-surface">Recently Finished</Text>
                 <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/library" as never)}>
                   <Text className="text-on-surface-variant font-label-md">See All</Text>
-                  <Icon name="chevron_right" size={16} color="#444841" />
+                  <Icon name="chevron_right" size={16} color=Colors.onSurfaceVariant />
                 </Pressable>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>

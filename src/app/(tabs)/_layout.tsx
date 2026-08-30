@@ -9,6 +9,7 @@ import { prefetchTabs } from "../../lib/tab-prefetch";
 import { getScheduleBlocks } from "../../lib/schedule-blocks";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { hasNotificationPermission, syncBlockReminders, stopSessionTimer } from "../../lib/session-notifications";
+import { Colors } from "../../constants/colors";
 
 const TABS: { name: string; label: string; icon: any }[] = [
   { name: "home", label: "Home", icon: "auto_stories" },
@@ -22,13 +23,13 @@ function CustomTabBar({ state, navigation }: any) {
     <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0">
       <LinearGradient
         pointerEvents="none"
-        colors={["rgba(251,249,245,0)", "#fbf9f5"]}
+        colors={["rgba(251,249,245,0)", Colors.surface]}
         style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 96 }}
       />
       <View
         className="mx-4 mb-6 h-16 flex-row justify-around items-center px-3 bg-primary rounded-full"
         style={{
-          shadowColor: "#2d2d2d",
+          shadowColor: Colors.shadowMedium,
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0.15,
           shadowRadius: 16,
@@ -61,7 +62,7 @@ function CustomTabBar({ state, navigation }: any) {
                 : "flex-col items-center justify-center px-5 py-1.5 active:bg-white/15 active:rounded-full"
             }
           >
-            <Icon name={tab.icon} size={18} color={focused ? "#ffffff" : "rgba(255,255,255,0.72)"} filled={focused} />
+            <Icon name={tab.icon} size={18} color={focused ? Colors.onPrimary : "rgba(255,255,255,0.72)"} filled={focused} />
             <View className="mt-1">
               <TabLabel label={tab.label} focused={focused} />
             </View>

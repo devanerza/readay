@@ -13,6 +13,7 @@ import Icon from "../components/Icon";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
 import { SessionSkeleton } from "../components/SkeletonScreens";
+import { Colors } from "../constants/colors";
 
 export default function ReadingSession() {
   const router = useRouter();
@@ -197,7 +198,7 @@ export default function ReadingSession() {
 
           <View className="items-center gap-2 mb-10">
             <View className="flex-row items-center gap-3">
-              <Icon name="timer" size={22} color="#52634c" filled />
+              <Icon name="timer" size={22} color={Colors.primary} filled />
               <Text className="font-display text-headline-lg-mobile text-primary tracking-widest">{timeLabel}</Text>
             </View>
             <Text className="font-label-md text-on-surface-variant uppercase tracking-tighter">elapsed</Text>
@@ -213,14 +214,14 @@ export default function ReadingSession() {
               onPress={togglePause}
               className="w-14 h-14 items-center justify-center rounded-full bg-surface-container border border-outline-variant active:scale-90"
             >
-              <Icon name={isPaused ? "play_arrow" : "pause"} color="#52634c" filled={isPaused} />
+              <Icon name={isPaused ? "play_arrow" : "pause"} color={Colors.primary} filled={isPaused} />
             </Pressable>
             <Pressable
               onPress={handleEndSession}
               disabled={saving}
               className="px-8 py-3 rounded-full bg-primary flex-row items-center gap-2 active:scale-95 disabled:opacity-50"
             >
-              <Icon name="stop_circle" size={16} color="#ffffff" />
+              <Icon name="stop_circle" size={16} color={Colors.onPrimary} />
               <Text className="text-on-primary font-label-md">{saving ? "Saving…" : "End Session"}</Text>
             </Pressable>
           </View>
@@ -234,7 +235,7 @@ export default function ReadingSession() {
             <View className="bg-surface rounded-t-3xl p-8 pb-12 gap-8">
               <View className="items-center gap-4">
                 <View className="p-4 bg-primary/10 rounded-3xl">
-                  <Icon name="check_circle" size={36} color="#52634c" filled />
+                  <Icon name="check_circle" size={36} color={Colors.primary} filled />
                 </View>
                 <Text className="font-display text-headline-md text-on-surface text-center">Session Complete</Text>
               </View>
@@ -280,7 +281,7 @@ export default function ReadingSession() {
             <View className="bg-surface rounded-t-3xl p-8 pb-12 gap-8">
               <View className="items-center gap-3">
                 <View className="p-4 bg-primary/10 rounded-3xl">
-                  <Icon name="auto_stories" size={36} color="#52634c" />
+                  <Icon name="auto_stories" size={36} color={Colors.primary} />
                 </View>
                 <Text className="font-display text-headline-md text-on-surface text-center">
                   What page did you{'\n'}reach?

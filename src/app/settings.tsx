@@ -16,6 +16,7 @@ import {
 import TopAppBar from "../components/TopAppBar";
 import ConfirmModal from "../components/ConfirmModal";
 import Icon, { type IconName } from "../components/Icon";
+import { Colors } from "../constants/colors";
 
 const PREFERENCE_ROWS: { key: string; icon: IconName; label: string; value?: string }[] = [
   { key: "reminders", icon: "schedule", label: "Schedule reminders" },
@@ -83,7 +84,7 @@ export default function Settings() {
           {/* Account */}
           <View className="flex-row items-center gap-4 bg-surface-container-low rounded-2xl p-5">
             <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center">
-              <Icon name="person_2" size={26} color="#52634c" />
+              <Icon name="person_2" size={26} color="Colors.primary" />
             </View>
             <View className="flex-1 gap-0.5">
               <Text className="font-title-lg text-on-surface">{profile?.display_name ?? "Reader"}</Text>
@@ -101,12 +102,12 @@ export default function Settings() {
                 const content = (
                   <>
                     <View className="flex-row items-center gap-3">
-                      <Icon name={row.icon} size={20} color="#52634c" />
+                      <Icon name={row.icon} size={20} color="Colors.primary" />
                       <Text className="font-body-lg text-on-surface">{row.label}</Text>
                     </View>
                     <View className="flex-row items-center gap-1">
                       <Text className="font-label-md text-on-surface-variant">{preferenceValues[row.key]}</Text>
-                      <Icon name="chevron_right" size={18} color="#747870" />
+                      <Icon name="chevron_right" size={18} color="Colors.outline" />
                     </View>
                   </>
                 );
@@ -129,7 +130,7 @@ export default function Settings() {
             <Text className="font-label-md text-on-surface-variant uppercase tracking-wider px-1">About</Text>
             <View className="flex-row items-center justify-between px-5 py-4 bg-surface-container-low rounded-2xl">
               <View className="flex-row items-center gap-3">
-                <Icon name="info" size={20} color="#52634c" />
+                <Icon name="info" size={20} color="Colors.primary" />
                 <Text className="font-body-lg text-on-surface">Version</Text>
               </View>
               <Text className="font-label-md text-on-surface-variant">1.0.0</Text>
@@ -142,7 +143,7 @@ export default function Settings() {
             disabled={signingOut}
             className="flex-row items-center justify-center gap-2 py-4 rounded-full bg-error/10 active:bg-error/20"
           >
-            <Icon name="logout" size={20} color="#ba1a1a" />
+            <Icon name="logout" size={20} color="Colors.error" />
             <Text className="font-label-lg text-error">{signingOut ? "Signing out…" : "Sign Out"}</Text>
           </Pressable>
         </ScrollView>

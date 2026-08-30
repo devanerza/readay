@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text } from "react-native";
 import Icon, { type IconName } from "./Icon";
+import { Colors } from "../constants/colors";
 
 type Props = {
   icon: IconName;
@@ -12,7 +13,7 @@ type Props = {
 export default function ReflectionCard({
   icon,
   iconBg = "bg-primary-fixed",
-  iconColor = "#52634c",
+  iconColor = Colors.primary,
   text,
 }: Props) {
   return (

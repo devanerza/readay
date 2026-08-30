@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated } from "react-native";
 import Icon, { type IconName } from "./Icon";
+import { Colors } from "../constants/colors";
 
 export default function Toast({
   message,
@@ -31,7 +32,7 @@ export default function Toast({
       style={{ opacity }}
     >
       <View className="bg-on-surface rounded-full px-5 py-3.5 flex-row items-center gap-2 shadow-lg">
-        <Icon name={icon} size={18} color="#ffffff" filled />
+        <Icon name={icon} size={18} color={Colors.onPrimary} filled />
         <Text className="text-surface font-label-md">{message}</Text>
       </View>
     </Animated.View>
