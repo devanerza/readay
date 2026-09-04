@@ -112,7 +112,7 @@ export default function Discover() {
   }, [coverUrls]);
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar 
         title="Discover" 

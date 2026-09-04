@@ -110,7 +110,7 @@ export default function OnboardingScreen() {
               hitSlop={12}
               className="w-10 h-10 rounded-full bg-surface-variant items-center justify-center"
             >
-              <Icon name="arrow_back" size={20} color="Colors.onSurfaceVariant" />
+              <Icon name="arrow_back" size={20} color={Colors.onSurfaceVariant} />
             </Pressable>
           ) : (
             <View className="w-10 h-10" />

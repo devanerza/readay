@@ -47,7 +47,7 @@ export default function AuthScreen() {
         >
           <View className="items-center mb-10">
             <View className="w-16 h-16 rounded-full bg-primary-container/20 items-center justify-center mb-6">
-              <Icon name="auto_stories" size={32} color="Colors.primary" />
+              <Icon name="auto_stories" size={32} color={Colors.primary} />
             </View>
             <Text className="font-display text-headline-lg-mobile text-on-surface text-center">
               Create your account
