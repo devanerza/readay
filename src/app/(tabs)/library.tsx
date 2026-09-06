@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getQueueItems, updateQueueItemStatus, deleteQueueItem } from "../../lib/queue-items";
+import { getProfile } from "../../lib/profiles";
 import { toCoverThumbUrl } from "../../lib/open-library";
 import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
@@ -114,20 +115,20 @@ export default function Library() {
             return (
               <View
                 key={item.id}
-                className="bg-surface-container-low rounded-2xl overflow-hidden border border-surface-variant/20"
+                className="bg-primary rounded-2xl overflow-hidden border border-surface-variant/20"
               >
                 <View className="flex-row p-4 gap-4">
                   {/* Book Cover */}
                   <Pressable
                     onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
-                    className="w-20 shrink-0"
+                    className="w-24 shrink-0"
                   >
                     <View className="aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: toCoverThumbUrl(item.books.cover_url) }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
                       ) : (
                         <View className="flex-1 items-center justify-center">
-                          <Text className="text-outline font-display text-headline-md">
+                          <Text className="text-surface-variant font-display text-headline-md">
                             {item.books?.title?.[0] ?? "?"}
                           </Text>
                         </View>
@@ -135,57 +136,59 @@ export default function Library() {
                     </View>
                   </Pressable>
 
-                  {/* Info */}
-                  <View className="flex-1 gap-1 justify-center">
-                    <Text className="font-title-lg text-on-surface" numberOfLines={2}>
-                      {item.books?.title ?? "Unknown"}
-                    </Text>
-                    <Text className="text-caption text-on-surface-variant italic">
-                      {item.books?.author ?? ""}
-                    </Text>
-                    {item.reason_text ? (
-                      <Text className="text-caption text-outline mt-1" numberOfLines={2}>
-                        {item.reason_text}
+                  {/* Info + Actions */}
+                  <View className="flex-1 gap-1 justify-between">
+                    <View>
+                      <Text className="font-title-lg text-surface" numberOfLines={2}>
+                        {item.books?.title ?? "Unknown"}
                       </Text>
-                    ) : null}
-                    {item.status === "reading" && item.books?.page_count ? (
-                      <View className="mt-1">
-                        <ProgressBar
-                          progress={item.books.page_count > 0 ? (item.current_page / item.books.page_count) * 100 : 0}
-                        />
-                      </View>
-                    ) : null}
-                    {item.status === "finished" ? (
-                      <View className="mt-1">
-                        <Text className="text-caption text-primary font-label-md">✓ Finished</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                </View>
+                      <Text className="text-caption text-surface-variant italic">
+                        {item.books?.author ?? ""}
+                      </Text>
+                      {item.reason_text ? (
+                        <Text className="text-caption text-surface mt-1" numberOfLines={2}>
+                          {item.reason_text}
+                        </Text>
+                      ) : null}
+                      {item.status === "reading" && item.books?.page_count ? (
+                        <View className="mt-1">
+                          <ProgressBar
+                            progress={item.books.page_count > 0 ? (item.current_page / item.books.page_count) * 100 : 0}
+                          />
+                        </View>
+                      ) : null}
+                      {item.status === "finished" ? (
+                        <View className="mt-1">
+                          <Text className="text-caption text-primary font-label-md">✓ Finished</Text>
+                        </View>
+                      ) : null}
+                    </View>
 
-                {/* Actions */}
-                <View className="flex-row border-t border-surface-variant/20">
-                  {item.status === "reading" ? (
-                    <Pressable
-                      onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
-                      className="flex-1 py-3 items-center active:bg-surface-variant"
-                    >
-                      <Text className="font-label-md text-primary text-sm">Resume</Text>
-                    </Pressable>
-                  ) : next ? (
-                    <Pressable
-                      onPress={() => statusMutation.mutate({ id: item.id, status: next.status })}
-                      className="flex-1 py-3 items-center active:bg-surface-variant"
-                    >
-                      <Text className="font-label-md text-primary text-sm">{next.label}</Text>
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    onPress={() => setRemoveTarget({ id: item.id, title: item.books?.title ?? "this book" })}
-                    className={`flex-1 py-3 items-center active:bg-surface-variant ${next || item.status === "reading" ? "border-l border-surface-variant/20" : ""}`}
-                  >
-                    <Text className="font-label-md text-error text-sm">Remove</Text>
-                  </Pressable>
+                    {/* Actions */}
+                    <View className="flex-row gap-2 mt-2">
+                      {item.status === "reading" ? (
+                        <Pressable
+                          onPress={() => router.push(`/reading-session?book_id=${item.book_id}`)}
+                          className="flex-1 py-2 bg-surface rounded-full active:opacity-80 items-center"
+                        >
+                          <Text className="text-primary font-label-md text-xs">Resume</Text>
+                        </Pressable>
+                      ) : next ? (
+                        <Pressable
+                          onPress={() => statusMutation.mutate({ id: item.id, status: next.status })}
+                          className="flex-1 py-2 bg-surface rounded-full active:opacity-80 items-center"
+                        >
+                          <Text className="text-primary font-label-md text-xs">{next.label}</Text>
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        onPress={() => setRemoveTarget({ id: item.id, title: item.books?.title ?? "this book" })}
+                        className="flex-1 py-2 bg-red-100 rounded-full active:opacity-80 items-center"
+                      >
+                        <Text className="text-error font-label-md text-xs">Remove</Text>
+                      </Pressable>
+                    </View>
+                  </View>
                 </View>
               </View>
             );

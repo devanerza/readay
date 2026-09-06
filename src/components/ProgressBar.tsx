@@ -11,8 +11,8 @@ type Props = {
 export default function ProgressBar({
   progress,
   height = 6,
-  bgColor = "bg-surface-variant",
-  fillColor = "bg-primary",
+  bgColor = "bg-surface-variant/30",
+  fillColor = "bg-surface",
 }: Props) {
   return (
     <View className={`w-full ${bgColor} rounded-full overflow-hidden`} style={{ height }}>
