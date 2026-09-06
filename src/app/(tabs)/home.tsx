@@ -261,8 +261,8 @@ export default function Home() {
 
                   <View className="gap-3">
                     <View className="flex-row items-center gap-1.5">
-                      <Icon name="schedule" size={14} color={Colors.onPrimary} />
-                      <Text className="font-label-md text-white/90" numberOfLines={1}>
+                      <Icon name="schedule" size={12} color={Colors.onPrimary} />
+                      <Text className="font-label-md text-white/90 text-xs" numberOfLines={1}>
                         {describeNextBlockTime(nextBlock)} · {nextBlockDuration} min
                       </Text>
                     </View>
