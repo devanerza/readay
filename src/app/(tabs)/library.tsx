@@ -19,6 +19,7 @@ import ProgressBar from "../../components/ProgressBar";
 import { Colors } from "../../constants/colors";
 
 const TABS = [
+  { key: "all", label: "All" },
   { key: "want_to_read", label: "Want to Read" },
   { key: "reading", label: "Reading" },
   { key: "finished", label: "Finished" },
@@ -31,12 +32,12 @@ export default function Library() {
   const session = useAuthStore((s) => s.session);
   const userId = session?.user.id;
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<TabKey>("want_to_read");
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [removeTarget, setRemoveTarget] = useState<{ id: string; title: string } | null>(null);
 
   const { data: items, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["queue-items", userId, activeTab],
-    queryFn: () => getQueueItems(userId!, activeTab),
+    queryFn: () => getQueueItems(userId!, activeTab === "all" ? undefined : activeTab),
     enabled: !!userId,
   });
 
@@ -194,11 +195,11 @@ export default function Library() {
             );
           }) : (
             <EmptyState
-              icon={activeTab === "want_to_read" ? "auto_stories" : activeTab === "reading" ? "auto_awesome_motion" : "check"}
-              title={activeTab === "want_to_read" ? "Your queue is empty" : activeTab === "reading" ? "Not reading anything yet" : "No finished books yet"}
-              subtitle={activeTab === "want_to_read" ? "Discover books to add to your reading list." : activeTab === "reading" ? "Pick a book from your queue and start reading." : "Finished books will appear here. Keep reading!"}
-              cta={activeTab === "reading" ? "Go to Want to Read" : "Discover Books"}
-              onCta={activeTab === "reading" ? () => setActiveTab("want_to_read") : () => router.push("/discover" as never)}
+              icon={activeTab === "all" ? "auto_stories" : activeTab === "want_to_read" ? "auto_stories" : activeTab === "reading" ? "auto_awesome_motion" : "check"}
+              title={activeTab === "all" ? "Your library is empty" : activeTab === "want_to_read" ? "Your queue is empty" : activeTab === "reading" ? "Not reading anything yet" : "No finished books yet"}
+              subtitle={activeTab === "all" ? "Add books to your library to get started." : activeTab === "want_to_read" ? "Discover books to add to your reading list." : activeTab === "reading" ? "Pick a book from your queue and start reading." : "Finished books will appear here. Keep reading!"}
+              cta="Discover Books"
+              onCta={() => router.push("/discover" as never)}
             />
           )}
         </ScrollView>
