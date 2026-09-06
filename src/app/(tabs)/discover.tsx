@@ -116,7 +116,13 @@ export default function Discover() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar 
         title="Discover" 
-        rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant, onPress: () => router.push("/settings" as never) }]} />
+        rightSlot={
+          <Pressable onPress={() => router.push("/profile" as never)} className="w-9 h-9 rounded-full bg-primary items-center justify-center active:opacity-80">
+            <Text className="font-display text-sm text-on-primary">
+              {(profile?.display_name ?? "R")[0].toUpperCase()}
+            </Text>
+          </Pressable>
+        } />
 
         <ScrollView
           className="flex-1 px-margin-page"

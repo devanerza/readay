@@ -179,9 +179,13 @@ export default function Home() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           logo={require("../../../assets/images/readay-header.png")}
-          rightActions={[
-            { icon: "settings", color: Colors.onSurfaceVariant, onPress: () => router.push("/settings" as never) },
-          ]}
+          rightSlot={
+            <Pressable onPress={() => router.push("/profile" as never)} className="w-9 h-9 rounded-full bg-primary items-center justify-center active:opacity-80">
+              <Text className="font-display text-sm text-on-primary">
+                {(profile?.display_name ?? "R")[0].toUpperCase()}
+              </Text>
+            </Pressable>
+          }
         />
 
         <ScrollView

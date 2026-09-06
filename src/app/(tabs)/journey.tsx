@@ -11,7 +11,7 @@ import { generateWeeklyInsight } from "../../lib/weekly-coach";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import StatTile from "../../components/StatTile";
-import { ProfileSkeleton } from "../../components/SkeletonScreens";
+import { JourneySkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
 import ReflectionCard from "../../components/ReflectionCard";
 import { Colors } from "../../constants/colors";
@@ -109,14 +109,20 @@ export default function Profile() {
     refreshing
   );
 
-  if (isLoading) return <ProfileSkeleton />;
+  if (isLoading) return <JourneySkeleton />;
 
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
-        title="Profile"
-        rightActions={[{ icon: "settings", color: Colors.onSurfaceVariant, onPress: () => router.push("/settings" as never) }]} />
+        title="Journey"
+        rightSlot={
+          <Pressable onPress={() => router.push("/profile" as never)} className="w-9 h-9 rounded-full bg-primary items-center justify-center active:opacity-80">
+            <Text className="font-display text-sm text-on-primary">
+              {(profile?.display_name ?? "R")[0].toUpperCase()}
+            </Text>
+          </Pressable>
+        } />
 
         <ScrollView
           className="flex-1 px-margin-page"

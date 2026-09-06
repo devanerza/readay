@@ -118,7 +118,7 @@ export default function RootLayout() {
           <Stack.Screen name="book-detail" options={{ presentation: "card" }} />
           <Stack.Screen name="reading-session" options={{ presentation: "fullScreenModal" }} />
           <Stack.Screen name="schedule" options={{ presentation: "card" }} />
-          <Stack.Screen name="settings" options={{ presentation: "card" }} />
+          <Stack.Screen name="profile" options={{ presentation: "card" }} />
         </Stack>
       </AuthGate>
     </QueryClientProvider>

@@ -74,7 +74,7 @@ export default function Settings() {
   return (
     <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
-        <TopAppBar title="Settings" onBack={() => router.back()} />
+        <TopAppBar title="Profile" onBack={() => router.back()} />
 
         <ScrollView
           className="flex-1 px-margin-page"
@@ -83,8 +83,10 @@ export default function Settings() {
         >
           {/* Account */}
           <View className="flex-row items-center gap-4 bg-surface-container-low rounded-2xl p-5">
-            <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center">
-              <Icon name="person_2" size={26} color={Colors.primary} />
+            <View className="w-14 h-14 rounded-full bg-primary items-center justify-center">
+              <Text className="font-display text-xl text-on-primary">
+                {(profile?.display_name ?? "R")[0].toUpperCase()}
+              </Text>
             </View>
             <View className="flex-1 gap-0.5">
               <Text className="font-title-lg text-on-surface">{profile?.display_name ?? "Reader"}</Text>
