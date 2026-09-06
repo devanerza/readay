@@ -15,7 +15,7 @@ const TABS: { name: string; label: string; icon: any }[] = [
   { name: "home", label: "Home", icon: "auto_stories" },
   { name: "discover", label: "Discover", icon: "explore" },
   { name: "library", label: "Library", icon: "book_2" },
-  { name: "profile", label: "Profile", icon: "person_2" },
+  { name: "journey", label: "Journey", icon: "wb_twilight" },
 ];
 
 function CustomTabBar({ state, navigation }: any) {
@@ -124,7 +124,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="home" />
       <Tabs.Screen name="discover" />
       <Tabs.Screen name="library" />
-      <Tabs.Screen name="profile" />
+      <Tabs.Screen name="journey" />
     </Tabs>
   );
 }
