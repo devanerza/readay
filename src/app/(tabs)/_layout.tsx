@@ -1,6 +1,7 @@
-import React, { useEffect } from "react";
-import { View, Text, Pressable } from "react-native";
-import { Tabs, useRouter } from "expo-router";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, Pressable, useWindowDimensions } from "react-native";
+import { useRouter } from "expo-router";
+import { TabView, Route } from "react-native-tab-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQueryClient } from "@tanstack/react-query";
 import Icon from "../../components/Icon";
@@ -11,82 +12,42 @@ import { usePreferencesStore } from "../../stores/preferences-store";
 import { hasNotificationPermission, syncBlockReminders, stopSessionTimer } from "../../lib/session-notifications";
 import { Colors } from "../../constants/colors";
 
-const TABS: { name: string; label: string; icon: any }[] = [
-  { name: "home", label: "Home", icon: "auto_stories" },
-  { name: "discover", label: "Discover", icon: "explore" },
-  { name: "library", label: "Library", icon: "book_2" },
-  { name: "journey", label: "Journey", icon: "wb_twilight" },
+import Home from "./home";
+import Discover from "./discover";
+import Library from "./library";
+import Journey from "./journey";
+
+const TABS: { key: string; label: string; icon: any }[] = [
+  { key: "home", label: "Home", icon: "auto_stories" },
+  { key: "discover", label: "Discover", icon: "explore" },
+  { key: "library", label: "Library", icon: "book_2" },
+  { key: "journey", label: "Journey", icon: "wb_twilight" },
 ];
 
-function CustomTabBar({ state, navigation }: any) {
-  return (
-    <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0">
-      <LinearGradient
-        pointerEvents="none"
-        colors={["rgba(251,249,245,0)", Colors.surface]}
-        style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 96 }}
-      />
-      <View
-        className="mx-4 mb-6 h-16 flex-row justify-around items-center px-3 bg-primary rounded-full"
-        style={{
-          shadowColor: Colors.shadowMedium,
-          shadowOffset: { width: 0, height: 6 },
-          shadowOpacity: 0.15,
-          shadowRadius: 16,
-          elevation: 16,
-        }}
-      >
-      {state.routes.map((route: any, index: number) => {
-        const tab = TABS.find((t) => t.name === route.name);
-        if (!tab) return null;
-        const focused = state.index === index;
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: "tabPress",
-            target: route.key,
-            canPreventDefault: true,
-          });
-          if (!focused && !event.defaultPrevented) {
-            navigation.jumpTo(route.name);
-          }
-        };
-
-        return (
-          <Pressable
-            key={route.key}
-            onPress={onPress}
-            className={
-              focused
-                ? "flex-col items-center justify-center bg-white/15 rounded-full px-5 py-1.5"
-                : "flex-col items-center justify-center px-5 py-1.5 active:bg-white/15 active:rounded-full"
-            }
-          >
-            <Icon name={tab.icon} size={18} color={focused ? Colors.onPrimary : "rgba(255,255,255,0.72)"} filled={focused} />
-            <View className="mt-1">
-              <TabLabel label={tab.label} focused={focused} />
-            </View>
-          </Pressable>
-        );
-      })}
-      </View>
-    </View>
-  );
-}
-
-function TabLabel({ label, focused }: { label: string; focused: boolean }) {
-  return (
-    <Text className={`font-display text-sm ${focused ? "text-white" : "text-white/70"}`}>
-      {label}
-    </Text>
-  );
-}
+const renderScene = ({ route }: { route: Route }) => {
+  switch (route.key) {
+    case "home":
+      return <Home />;
+    case "discover":
+      return <Discover />;
+    case "library":
+      return <Library />;
+    case "journey":
+      return <Journey />;
+    default:
+      return null;
+  }
+};
 
 export default function TabsLayout() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const session = useAuthStore((s) => s.session);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const layout = useWindowDimensions();
+
+  const [index, setIndex] = useState(0);
+  const routes = TABS.map((t) => ({ key: t.key, title: t.label }));
 
   useEffect(() => {
     if (!isLoading && !session) {
@@ -114,17 +75,84 @@ export default function TabsLayout() {
     })();
   }, [userId, remindersEnabled]);
 
+  const handleIndexChange = useCallback((newIndex: number) => {
+    setIndex(newIndex);
+  }, []);
+
   if (!session) return null;
 
   return (
-    <Tabs
-      screenOptions={{ headerShown: false, lazy: false }}
-      tabBar={(props) => <CustomTabBar {...props} />}
-    >
-      <Tabs.Screen name="home" />
-      <Tabs.Screen name="discover" />
-      <Tabs.Screen name="library" />
-      <Tabs.Screen name="journey" />
-    </Tabs>
+    <View style={{ flex: 1, backgroundColor: Colors.surface }}>
+      <TabView
+        navigationState={{ index, routes }}
+        renderScene={renderScene}
+        onIndexChange={handleIndexChange}
+        renderTabBar={() => null}
+        initialLayout={{ width: layout.width, height: layout.height }}
+        lazy
+        style={{ flex: 1 }}
+      />
+      {/* Tab Bar */}
+      <View pointerEvents="box-none" style={{ position: "absolute", bottom: 0, left: 0, right: 0 }}>
+        <LinearGradient
+          pointerEvents="none"
+          colors={["rgba(251,249,245,0)", Colors.surface]}
+          style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 96 }}
+        />
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 24,
+            height: 64,
+            flexDirection: "row",
+            justifyContent: "space-around",
+            alignItems: "center",
+            paddingHorizontal: 12,
+            backgroundColor: Colors.primary,
+            borderRadius: 999,
+            shadowColor: Colors.shadowMedium,
+            shadowOffset: { width: 0, height: 6 },
+            shadowOpacity: 0.15,
+            shadowRadius: 16,
+            elevation: 16,
+          }}
+        >
+          {TABS.map((tab) => {
+            const isFocused = index === TABS.findIndex((t) => t.key === tab.key);
+
+            const onPress = () => {
+              handleIndexChange(TABS.findIndex((t) => t.key === tab.key));
+            };
+
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={onPress}
+                style={{
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: isFocused ? "rgba(255,255,255,0.15)" : "transparent",
+                  borderRadius: 999,
+                  paddingHorizontal: 20,
+                  paddingVertical: 6,
+                }}
+              >
+                <Icon name={tab.icon} size={18} color={isFocused ? Colors.onPrimary : "rgba(255,255,255,0.72)"} filled={isFocused} />
+                <View style={{ marginTop: 4 }}>
+                  <Text style={{
+                    fontFamily: "Inter-Bold",
+                    fontSize: 14,
+                    color: isFocused ? "white" : "rgba(255,255,255,0.70)",
+                  }}>
+                    {tab.label}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    </View>
   );
 }
