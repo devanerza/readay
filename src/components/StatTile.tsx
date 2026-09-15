@@ -12,10 +12,10 @@ type Props = {
 
 export default function StatTile({ icon, iconColor = Colors.secondary, value, label }: Props) {
   return (
-    <View className="flex-1 p-4 rounded-xl bg-surface-container border border-surface-variant/30 gap-1">
+    <View className="flex-1 p-4 rounded-xl bg-primary gap-1">
       <Icon name={icon} size={20} color={iconColor} />
-      <Text className="font-display text-headline-md">{value}</Text>
-      <Text className="text-caption text-on-surface-variant">{label}</Text>
+      <Text className="font-display text-headline-md text-surface">{value}</Text>
+      <Text className="text-caption text-surface">{label}</Text>
     </View>
   );
 }

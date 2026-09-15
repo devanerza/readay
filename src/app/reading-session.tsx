@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createReadingSession, updateSessionPages } from "../lib/reading-sessions";
 import { getBook } from "../lib/books";
-import { getCurrentPage, updateCurrentPage } from "../lib/queue-items";
+import { getCurrentPage, updateCurrentPage, getQueueItemForBook, updateQueueItemStatus } from "../lib/queue-items";
 import { startSessionTimer, stopSessionTimer, pauseSessionTimer, resumeSessionTimer } from "../lib/session-notifications";
 import { useAuthStore } from "../stores/auth-store";
 import Icon from "../components/Icon";
@@ -137,6 +137,16 @@ export default function ReadingSession() {
       const pagesRead = page - currentPage;
       await updateSessionPages(savedSessionId, Math.max(pagesRead, 0));
       await updateCurrentPage(book_id, userId, page);
+
+      if (book?.page_count && page >= book.page_count) {
+        const queueItem = await getQueueItemForBook(book_id, userId);
+        if (queueItem && queueItem.status === 'reading') {
+          await updateQueueItemStatus(queueItem.id, 'finished');
+          queryClient.invalidateQueries({ queryKey: ["queue-items", userId] });
+          queryClient.invalidateQueries({ queryKey: ["all-reading", userId] });
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["current-page", book_id, userId] });
       queryClient.invalidateQueries({ queryKey: ["reading-stats", userId] });
       router.back();

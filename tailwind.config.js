@@ -8,14 +8,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: "#52634c",
+        primary: "#394A35",
         "on-primary": "#ffffff",
         "primary-container": "#8b9d83",
-        secondary: "#7d562d",
+        secondary: "#FFFFFF",
         "secondary-container": "#ffca98",
         "secondary-fixed": "#ffdcbd",
         error: "#ba1a1a",
-        surface: "#fbf9f5",
+        surface: "#F7EFDE",
         "surface-container": "#efeeea",
         "surface-container-low": "#f5f3ef",
         "surface-container-high": "#eae8e4",

@@ -140,13 +140,13 @@ export default function Profile() {
           </View>
 
           {/* Reading Goal */}
-          <View className="bg-surface-container-low rounded-xl p-6 items-center gap-2">
-            <Text className="font-label-md text-primary tracking-widest uppercase text-[10px]">Current Goal</Text>
-            <Text className="font-display text-headline-md text-on-surface">{goalText}</Text>
+          <View className="bg-primary rounded-xl p-6 items-center gap-2">
+            <Text className="font-label-md text-surface tracking-widest uppercase text-[10px]">Current Goal</Text>
+            <Text className="font-display text-headline-md text-surface">{goalText}</Text>
             <View className="w-full max-w-xs h-1 bg-surface-variant rounded-full mt-2 overflow-hidden">
               <View className="h-full bg-primary rounded-full" style={{ width: `${goalProgress}%` }} />
             </View>
-            <Text className="text-caption text-on-surface-variant">
+            <Text className="text-caption text-surface">
               {stats?.booksCompleted ?? 0} book{(stats?.booksCompleted ?? 0) !== 1 ? "s" : ""} completed
             </Text>
           </View>
@@ -179,13 +179,13 @@ export default function Profile() {
             <View className="flex-row gap-4">
               <StatTile
                 icon="schedule"
-                iconColor={Colors.secondary}
+                iconColor={Colors.surface}
                 value={stats ? `${Math.floor(stats.totalMinutes / 60)}h` : "—"}
                 label="Reading Time"
               />
               <StatTile
                 icon="auto_stories"
-                iconColor={Colors.primary}
+                iconColor={Colors.surface}
                 value={stats ? stats.totalPages.toLocaleString() : "—"}
                 label="Pages Turned"
               />
@@ -193,21 +193,21 @@ export default function Profile() {
           </View>
 
           {/* Consistency Vine */}
-          <View className="p-6 bg-surface-container-low rounded-[32px] gap-6">
+          <View className="p-6 bg-primary rounded-[32px] gap-6">
             <View className="flex-row justify-between items-end">
               <View className="gap-1">
-                <Text className="font-title-lg text-on-surface">Consistency Vine</Text>
-                <Text className="font-label-md text-on-surface-variant">
+                <Text className="font-title-lg text-surface">Consistency Vine</Text>
+                <Text className="font-label-md text-surface">
                   {stats && stats.streakDays > 0
                     ? `${stats.streakDays} day${stats.streakDays !== 1 ? "s" : ""} of mindfulness`
                     : "Start reading to grow your vine"}
                 </Text>
               </View>
               <View className="items-end">
-                <Text className="font-display text-headline-lg text-primary">
+                <Text className="font-display text-headline-lg text-surface">
                   {completionRate > 0 ? `${completionRate}%` : "—"}
                 </Text>
-                <Text className="text-caption text-outline">Completion Rate</Text>
+                <Text className="text-caption text-surface/40">Completion Rate</Text>
               </View>
             </View>
             <View className="relative h-16 flex-row items-center justify-between px-1">
@@ -215,7 +215,7 @@ export default function Profile() {
                 ? vineDots.map((dot, i) => (
                     <View
                       key={i}
-                      className={`rounded-full ${dot.active ? "bg-primary" : "bg-outline-variant"}`}
+                      className={`rounded-full ${dot.active ? "bg-surface/50" : "bg-surface"}`}
                       style={{ width: dot.size, height: dot.size }}
                     />
                   ))

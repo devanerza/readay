@@ -309,9 +309,9 @@ export default function Home() {
                   <Pressable
                     key={item.id}
                     onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
-                    className="w-[140px] rounded-lg overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[140px] active:opacity-80"
                   >
-                    <View className="w-full aspect-[2/3] bg-surface-variant">
+                    <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
@@ -320,15 +320,11 @@ export default function Home() {
                         </View>
                       )}
                     </View>
-                    <View className="p-3 gap-1">
-                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
-                      {item.books?.author ? (
-                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{item.books.author}</Text>
-                      ) : null}
-                      <View className="flex-row items-center gap-1 pt-1">
-                        <Icon name="play_arrow" size={14} color={Colors.primary} filled />
-                        <Text className="font-label-md text-primary text-xs">Resume</Text>
-                      </View>
+                    <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
+                    <Text className="text-caption text-outline" numberOfLines={1}>{item.books?.author ?? ""}</Text>
+                    <View className="flex-row items-center gap-1 mt-1">
+                      <Icon name="play_arrow" size={14} color={Colors.primary} filled />
+                      <Text className="font-label-md text-primary text-xs">Resume</Text>
                     </View>
                   </Pressable>
                 ))}
@@ -368,9 +364,9 @@ export default function Home() {
                   <Pressable
                     key={item.id}
                     onPress={() => { prefetchCovers([item.books?.cover_url]); router.push(`/book-detail?book_id=${item.book_id}`); }}
-                    className="w-[140px] rounded-lg overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[140px] active:opacity-80"
                   >
-                    <View className="w-full aspect-[2/3] bg-surface-variant">
+                    <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                       {item.books?.cover_url ? (
                         <Image source={{ uri: item.books.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={item.books.cover_url} transition={150} />
                       ) : (
@@ -379,15 +375,11 @@ export default function Home() {
                         </View>
                       )}
                     </View>
-                    <View className="p-3 gap-1">
-                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
-                      {item.books?.author ? (
-                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{item.books.author}</Text>
-                      ) : null}
-                      <View className="flex-row items-center gap-1 pt-1">
-                        <Icon name="play_arrow" size={14} color={Colors.primary} filled />
-                        <Text className="font-label-md text-primary text-xs">Start Reading</Text>
-                      </View>
+                    <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{item.books?.title ?? "Unknown"}</Text>
+                    <Text className="text-caption text-outline" numberOfLines={1}>{item.books?.author ?? ""}</Text>
+                    <View className="flex-row items-center gap-1 mt-1">
+                      <Icon name="play_arrow" size={14} color={Colors.primary} filled />
+                      <Text className="font-label-md text-primary text-xs">Start Reading</Text>
                     </View>
                   </Pressable>
                 ))}
@@ -427,9 +419,9 @@ export default function Home() {
                   <Pressable
                     key={d.key}
                     onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
-                    className="w-[140px] rounded-2xl overflow-hidden bg-surface-container active:opacity-80"
+                    className="w-[140px] active:opacity-80"
                   >
-                    <View className="w-full aspect-[2/3] bg-surface-variant">
+                    <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
                       {d.cover_url ? (
                         <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
                       ) : (
@@ -438,12 +430,8 @@ export default function Home() {
                         </View>
                       )}
                     </View>
-                    <View className="p-3 gap-1">
-                      <Text className="font-label-md text-on-surface" numberOfLines={1}>{d.title}</Text>
-                      {d.author ? (
-                        <Text className="text-caption text-on-surface-variant" numberOfLines={1}>{d.author}</Text>
-                      ) : null}
-                    </View>
+                    <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
+                    <Text className="text-caption text-outline" numberOfLines={1}>{d.author ?? ""}</Text>
                   </Pressable>
                 ))}
               </ScrollView>
