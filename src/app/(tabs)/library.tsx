@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "../../stores/auth-store";
 import { getQueueItems, updateQueueItemStatus, deleteQueueItem } from "../../lib/queue-items";
 import { getProfile } from "../../lib/profiles";
+import { reRankQueue } from "../../lib/queue-ranking";
 import { toCoverThumbUrl } from "../../lib/open-library";
 import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
@@ -75,7 +76,12 @@ export default function Library() {
     onError: () => toast.show("Could not remove book."),
   });
 
-  const filteredItems = items ?? [];
+  // Apply genre-weighted ranking to want_to_read items
+  const rawItems = items ?? [];
+  const filteredItems = 
+    activeTab === "want_to_read" && profile?.genre_weights
+      ? reRankQueue(rawItems, profile.genre_weights)
+      : rawItems;
 
   const getNextStatus = (current: string): { status: 'reading' | 'finished' | 'want_to_read'; label: string } | null => {
     if (current === "want_to_read") return { status: "reading", label: "Start Reading" };
