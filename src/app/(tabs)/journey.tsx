@@ -7,7 +7,7 @@ import { useAuthStore } from "../../stores/auth-store";
 import { getProfile } from "../../lib/profiles";
 import { getReadingStats, getWeeklySessionDays, getTargetPerformance } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
-import { generateWeeklyInsight } from "../../lib/weekly-coach";
+import { getWeeklyInsight } from "../../lib/weekly-coach";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
 import StatTile from "../../components/StatTile";
@@ -56,7 +56,7 @@ export default function Profile() {
 
   const { data: insight, isLoading: insightLoading, refetch: refetchInsight, isRefetching: refetchingInsight } = useQuery({
     queryKey: ["weekly-insight", userId],
-    queryFn: () => generateWeeklyInsight(userId!),
+    queryFn: () => getWeeklyInsight(userId!),
     enabled: !!userId,
   });
 

@@ -1,4 +1,4 @@
-import { subDays, startOfWeek, differenceInDays } from 'date-fns';
+import { subDays, startOfWeek, differenceInDays, format } from 'date-fns';
 import { supabase } from './supabase';
 
 export type WeeklyInsight = {
@@ -8,6 +8,14 @@ export type WeeklyInsight = {
   recommendation: string;
   weekTotalMinutes: number;
   trend: 'up' | 'down' | 'stable';
+};
+
+type CachedInsight = {
+  id: string;
+  user_id: string;
+  week_start: string;
+  summary_text: string;
+  recommendation_text: string;
 };
 
 function pick<T>(arr: T[], seed: number): T {
@@ -107,4 +115,60 @@ export async function generateWeeklyInsight(userId: string): Promise<WeeklyInsig
     weekTotalMinutes: thisWeekMinutes,
     trend,
   };
+}
+
+/**
+ * Get weekly insight with caching.
+ * Reads from weekly_insights table first, falls back to generation if cache miss.
+ */
+export async function getWeeklyInsight(userId: string): Promise<WeeklyInsight> {
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+  // Try cache first
+  const { data: cached } = await supabase
+    .from('weekly_insights')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('week_start', weekKey)
+    .maybeSingle();
+
+  if (cached) {
+    // Return cached insight (narrative/recommendation only; recompute stats on-the-fly for now)
+    const freshStats = await generateWeeklyInsight(userId);
+    return {
+      ...freshStats,
+      narrative: cached.summary_text,
+      recommendation: cached.recommendation_text,
+    };
+  }
+
+  // Cache miss — generate and persist
+  const insight = await generateWeeklyInsight(userId);
+  await cacheWeeklyInsight(userId, weekKey, insight);
+  return insight;
+}
+
+/**
+ * Cache weekly insight to DB.
+ */
+async function cacheWeeklyInsight(userId: string, weekStart: string, insight: WeeklyInsight): Promise<void> {
+  await supabase.from('weekly_insights').upsert({
+    user_id: userId,
+    week_start: weekStart,
+    summary_text: insight.narrative,
+    recommendation_text: insight.recommendation,
+  }, { onConflict: 'user_id,week_start' });
+}
+
+/**
+ * Invalidate cached insight for current week (call after new session logged).
+ */
+export async function invalidateWeeklyInsight(userId: string): Promise<void> {
+  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  await supabase
+    .from('weekly_insights')
+    .delete()
+    .eq('user_id', userId)
+    .eq('week_start', weekStart);
 }

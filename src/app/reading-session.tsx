@@ -9,6 +9,7 @@ import { getBook } from "../lib/books";
 import { getCurrentPage, updateCurrentPage, getQueueItemForBook, updateQueueItemStatus } from "../lib/queue-items";
 import { startSessionTimer, stopSessionTimer, pauseSessionTimer, resumeSessionTimer } from "../lib/session-notifications";
 import { recalculateGenreWeights } from "../lib/genre-weights";
+import { invalidateWeeklyInsight } from "../lib/weekly-coach";
 import { useAuthStore } from "../stores/auth-store";
 import { useToast } from "../lib/use-toast";
 import Icon from "../components/Icon";
@@ -115,6 +116,9 @@ export default function ReadingSession() {
       
       // Trigger genre weight recalculation (async, non-blocking)
       recalculateGenreWeights(userId);
+      
+      // Invalidate weekly insight cache
+      invalidateWeeklyInsight(userId);
     } catch (e) {
       toast.show(e instanceof Error ? e.message : String(e));
       router.back();
