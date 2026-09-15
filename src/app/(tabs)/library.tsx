@@ -19,7 +19,6 @@ import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import ConfirmModal from "../../components/ConfirmModal";
 import ProgressBar from "../../components/ProgressBar";
 import Toast from "../../components/Toast";
-import { Colors } from "../../constants/colors";
 
 const TABS = [
   { key: "all", label: "All" },

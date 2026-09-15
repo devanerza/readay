@@ -206,7 +206,7 @@ export default function Discover() {
             ) : displayDocs.length > 0 ? (
               <View className="gap-4">
                 <Text className="font-headline-lg-mobile text-on-surface">
-                  Results for "{debouncedQuery}"
+                  Results for &ldquo;{debouncedQuery}&rdquo;
                 </Text>
                 <View className="gap-y-6">
                   {displayDocs.map((doc) => {
@@ -235,7 +235,7 @@ export default function Discover() {
               </View>
             ) : (
               <View className="gap-2 pt-4 items-center">
-                <Text className="font-body-md text-on-surface-variant">No results for "{debouncedQuery}"</Text>
+                <Text className="font-body-md text-on-surface-variant">No results for &ldquo;{debouncedQuery}&rdquo;</Text>
               </View>
             )
           ) : activeGenre === "All Curated" ? (

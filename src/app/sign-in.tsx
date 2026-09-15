@@ -96,7 +96,7 @@ export default function SignInScreen() {
 
           <View className="flex-row justify-center mt-6">
             <Text className="font-body-md text-on-surface-variant">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
             </Text>
             <Pressable onPress={() => router.push("/auth" as never)}>
               <Text className="font-label-md text-primary">Create one</Text>

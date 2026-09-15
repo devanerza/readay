@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, Pressable } from "react-native";
-import Icon, { type IconName } from "./Icon";
 
 type Tab = {
   key: string;

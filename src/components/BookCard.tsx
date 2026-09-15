@@ -51,7 +51,6 @@ export function BookCardHorizontal({
   reason,
   badge,
 }: Props & { reason?: string; badge?: string }) {
-  const dim = DIMENSIONS[size];
   return (
     <Pressable onPress={onPress} className="flex-row gap-4 p-4 bg-surface-container-low rounded-2xl border border-surface-variant/20">
       <BookCover book={book} size={size} />
