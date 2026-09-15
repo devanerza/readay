@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, TextInput, Alert, Modal, FlatList, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, TextInput, Modal, FlatList, RefreshControl } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,7 +11,10 @@ import { toCoverThumbUrl } from "../lib/open-library";
 import { usePreferencesStore } from "../stores/preferences-store";
 import { ensureNotificationPermission, hasNotificationPermission, syncBlockReminders } from "../lib/session-notifications";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
+import { useToast } from "../lib/use-toast";
 import Icon from "../components/Icon";
+import Toast from "../components/Toast";
+import ConfirmModal from "../components/ConfirmModal";
 import { ScheduleSkeleton } from "../components/SkeletonScreens";
 import { Colors } from "../constants/colors";
 
@@ -57,6 +60,8 @@ export default function Schedule() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [showForm, setShowForm] = useState(false);
   const [showBookPicker, setShowBookPicker] = useState(false);
+  const toast = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null);
 
   const { data: blocks, isLoading, refetch: refetchBlocks, isRefetching: refetchingBlocks } = useQuery({
     queryKey: ["schedule-blocks", userId],
@@ -113,7 +118,7 @@ export default function Schedule() {
       resetForm();
       resyncReminders();
     },
-    onError: (e) => Alert.alert("Error", `Could not save schedule block: ${e instanceof Error ? e.message : String(e)}`),
+    onError: (e) => toast.show(`Could not save schedule block: ${e instanceof Error ? e.message : String(e)}`),
   });
 
   const deleteMutation = useMutation({
@@ -122,7 +127,7 @@ export default function Schedule() {
       queryClient.invalidateQueries({ queryKey: ["schedule-blocks", userId] });
       resyncReminders();
     },
-    onError: (e) => Alert.alert("Error", `Could not delete schedule block: ${e instanceof Error ? e.message : String(e)}`),
+    onError: (e) => toast.show(`Could not delete schedule block: ${e instanceof Error ? e.message : String(e)}`),
   });
 
   const resetForm = () => {
@@ -181,12 +186,7 @@ export default function Schedule() {
           <View className="gap-4 mt-2">
             <Text className="font-display text-title-lg text-on-surface">Today</Text>
             {todayBlocks.length > 0 ? todayBlocks.map((block) => (
-              <BlockCard key={block.id} block={block} onEdit={() => editBlock(block)} onDelete={() => {
-                Alert.alert("Delete Block", `Remove "${block.label}"?`, [
-                  { text: "Cancel", style: "cancel" },
-                  { text: "Delete", style: "destructive", onPress: () => deleteMutation.mutate(block.id) },
-                ]);
-              }} />
+              <BlockCard key={block.id} block={block} onEdit={() => editBlock(block)} onDelete={() => setDeleteTarget({ id: block.id, label: block.label })} />
             )) : (
               <View className="bg-surface-container-low rounded-2xl p-6 items-center gap-3">
                 <Icon name="schedule" size={32} color={Colors.outline} />
@@ -209,12 +209,7 @@ export default function Schedule() {
             {allBlocks.length > 0 ? (
               <View className="gap-3">
                 {allBlocks.map((block) => (
-                  <BlockCard key={block.id} block={block} onEdit={() => editBlock(block)} onDelete={() => {
-                    Alert.alert("Delete Block", `Remove "${block.label}"?`, [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Delete", style: "destructive", onPress: () => deleteMutation.mutate(block.id) },
-                    ]);
-                  }} />
+                  <BlockCard key={block.id} block={block} onEdit={() => editBlock(block)} onDelete={() => setDeleteTarget({ id: block.id, label: block.label })} />
                 ))}
               </View>
             ) : (
@@ -414,6 +409,20 @@ export default function Schedule() {
           </View>
         </Modal>
       </SafeAreaView>
+
+      <ConfirmModal
+        visible={!!deleteTarget}
+        title="Delete Block"
+        message={`Remove "${deleteTarget?.label ?? "this block"}"?`}
+        confirmLabel="Delete"
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+      />
+
+      <Toast message={toast.message} onDismiss={toast.dismiss} />
     </View>
   );
 }

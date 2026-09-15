@@ -158,10 +158,6 @@ export default function BookDetail() {
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           onBack={() => router.back()}
-            rightActions={[
-            { icon: "share", color: Colors.onSurfaceVariant },
-            { icon: "bookmark", color: Colors.onSurfaceVariant },
-          ]}
         />
 
         <ScrollView

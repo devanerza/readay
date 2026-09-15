@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, ScrollView, Pressable, Alert, RefreshControl } from "react-native";
+import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -10,12 +10,14 @@ import { getProfile } from "../../lib/profiles";
 import { toCoverThumbUrl } from "../../lib/open-library";
 import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
+import { useToast } from "../../lib/use-toast";
 import TopAppBar from "../../components/TopAppBar";
 import TabSwitcher from "../../components/TabSwitcher";
 import EmptyState from "../../components/EmptyState";
 import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import ConfirmModal from "../../components/ConfirmModal";
 import ProgressBar from "../../components/ProgressBar";
+import Toast from "../../components/Toast";
 import { Colors } from "../../constants/colors";
 
 const TABS = [
@@ -34,6 +36,7 @@ export default function Library() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [removeTarget, setRemoveTarget] = useState<{ id: string; title: string } | null>(null);
+  const toast = useToast();
 
   const { data: items, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ["queue-items", userId, activeTab],
@@ -60,7 +63,7 @@ export default function Library() {
         if (item) router.push(`/reading-session?book_id=${item.book_id}`);
       }
     },
-    onError: () => Alert.alert("Error", "Could not update book status."),
+    onError: () => toast.show("Could not update book status."),
   });
 
   const deleteMutation = useMutation({
@@ -69,7 +72,7 @@ export default function Library() {
       queryClient.invalidateQueries({ queryKey: ["queue-items", userId] });
       queryClient.invalidateQueries({ queryKey: ["all-reading", userId] });
     },
-    onError: () => Alert.alert("Error", "Could not remove book."),
+    onError: () => toast.show("Could not remove book."),
   });
 
   const filteredItems = items ?? [];
@@ -216,6 +219,8 @@ export default function Library() {
           setRemoveTarget(null);
         }}
       />
+
+      <Toast message={toast.message} onDismiss={toast.dismiss} />
     </View>
   );
 }

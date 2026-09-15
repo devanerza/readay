@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Alert, TextInput, Modal } from "react-native";
+import { View, Text, Pressable, TextInput, Modal } from "react-native";
 import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,9 +9,12 @@ import { getBook } from "../lib/books";
 import { getCurrentPage, updateCurrentPage, getQueueItemForBook, updateQueueItemStatus } from "../lib/queue-items";
 import { startSessionTimer, stopSessionTimer, pauseSessionTimer, resumeSessionTimer } from "../lib/session-notifications";
 import { useAuthStore } from "../stores/auth-store";
+import { useToast } from "../lib/use-toast";
 import Icon from "../components/Icon";
 import TopAppBar from "../components/TopAppBar";
 import ProgressBar from "../components/ProgressBar";
+import ConfirmModal from "../components/ConfirmModal";
+import Toast from "../components/Toast";
 import { SessionSkeleton } from "../components/SkeletonScreens";
 import { Colors } from "../constants/colors";
 
@@ -29,6 +32,8 @@ export default function ReadingSession() {
   const [showPageInput, setShowPageInput] = useState(false);
   const [savedSessionId, setSavedSessionId] = useState<string | null>(null);
   const [pageInput, setPageInput] = useState("");
+  const [showTooShortConfirm, setShowTooShortConfirm] = useState(false);
+  const toast = useToast();
   const accumulatedMsRef = useRef(0);
   const runningSinceRef = useRef<number | null>(null);
   const timerStartedRef = useRef(false);
@@ -90,10 +95,7 @@ export default function ReadingSession() {
     if (!userId) return;
     const duration = elapsedSec();
     if (duration < 10) {
-      Alert.alert("Session too short", "Sessions under 10 seconds won't be saved.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: () => router.back() },
-      ]);
+      setShowTooShortConfirm(true);
       return;
     }
 
@@ -110,7 +112,7 @@ export default function ReadingSession() {
       setSavedSessionId(id);
       setShowSummary(true);
     } catch (e) {
-      Alert.alert("Error", e instanceof Error ? e.message : String(e));
+      toast.show(e instanceof Error ? e.message : String(e));
       router.back();
     } finally {
       setSaving(false);
@@ -151,7 +153,7 @@ export default function ReadingSession() {
       queryClient.invalidateQueries({ queryKey: ["reading-stats", userId] });
       router.back();
     } catch {
-      Alert.alert("Error", "Could not save page.");
+      toast.show("Could not save page.");
     }
   };
 
@@ -336,6 +338,17 @@ export default function ReadingSession() {
           </View>
         </View>
       </Modal>
+
+      <ConfirmModal
+        visible={showTooShortConfirm}
+        title="Session too short"
+        message="Sessions under 10 seconds won't be saved."
+        confirmLabel="Discard"
+        onCancel={() => setShowTooShortConfirm(false)}
+        onConfirm={() => router.back()}
+      />
+
+      <Toast message={toast.message} onDismiss={toast.dismiss} />
     </View>
   );
 }
