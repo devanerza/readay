@@ -18,6 +18,7 @@
 5. **Language:** all copy/strings in English for MVP, but never hardcode raw strings inline — route through a simple i18n/strings layer from day one so the Bahasa Indonesia fast-follow (PRD §10.2) is a translation pass, not a refactor. If the provided UI hardcodes strings, that's something to flag/refactor into the strings layer as part of wiring it up.
 6. **Offline logging is out of scope for MVP** (PRD §10.3) — but don't paint the session-logging flow into a corner; keep the write path simple enough that a local queue can be added later without a schema change.
 7. **Open Library API for real book data.** Use Open Library's free API (`/search.json`, `/works/{id}.json`, `covers.openlibrary.org`) for Discover search, book details, and cover images. Cache results in Supabase `books` table via upsert by `open_library_id`. No API key required.
+8. **Conventional commits, per-feature.** Every time the user asks to change or build something and it's verified working, make a git commit using [Conventional Commits](https://www.conventionalcommits.org/) format (`feat:`, `fix:`, `refactor:`, etc.). **One commit per change/feature — never bundle multiple features into a single commit.**
 
 ---
 

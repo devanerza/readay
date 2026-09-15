@@ -288,3 +288,4 @@ Row Level Security: intended policy shape is `user_id = auth.uid()` on every tab
 1. **Weekly Coach insights:** Rule-based/templated for MVP. Revisit an LLM-generated version later once there's enough real session data to justify it.
 2. **Language:** English first at launch. Bahasa Indonesia as a fast-follow.
 3. **Offline session logging:** Not in MVP. Fast-follow once the core loop is validated.
+4. **Commits:** Every change that works gets committed using [Conventional Commits](https://www.conventionalcommits.org/) format. One commit per change/feature — never bundle multiple features into a single commit.
