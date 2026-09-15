@@ -42,6 +42,8 @@ const ICON_MAP: Record<string, keyof typeof MaterialIcons.glyphMap> = {
   list_alt: "list-alt",
   info: "info-outline",
   logout: "logout",
+  more_vert: "more-vert",
+  bookmark_added: "bookmark-added",
 };
 
 export type IconName = keyof typeof ICON_MAP;

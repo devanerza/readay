@@ -19,6 +19,8 @@ import { LibrarySkeleton } from "../../components/SkeletonScreens";
 import ConfirmModal from "../../components/ConfirmModal";
 import ProgressBar from "../../components/ProgressBar";
 import Toast from "../../components/Toast";
+import Icon from "../../components/Icon";
+import { Colors } from "../../constants/colors";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -36,6 +38,7 @@ export default function Library() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [removeTarget, setRemoveTarget] = useState<{ id: string; title: string } | null>(null);
+  const [menuTarget, setMenuTarget] = useState<string | null>(null);
   const toast = useToast();
 
   const { data: items, isLoading, refetch, isRefetching } = useQuery({
@@ -191,14 +194,42 @@ export default function Library() {
                         </Pressable>
                       ) : null}
                       <Pressable
-                        onPress={() => setRemoveTarget({ id: item.id, title: item.books?.title ?? "this book" })}
-                        className="flex-1 py-2 bg-red-100 rounded-full active:opacity-80 items-center"
+                        onPress={() => setMenuTarget(menuTarget === item.id ? null : item.id)}
+                        className="w-8 h-8 rounded-full bg-surface items-center justify-center active:opacity-80"
                       >
-                        <Text className="text-error font-label-md text-xs">Remove</Text>
+                        <Icon name="more_vert" size={16} color={Colors.primary} />
                       </Pressable>
                     </View>
                   </View>
                 </View>
+
+                {/* Dropdown Menu */}
+                {menuTarget === item.id && (
+                  <View className="absolute top-14 right-4 z-50 bg-surface rounded-xl shadow-lg overflow-hidden border border-surface-variant/20" style={{ elevation: 8 }}>
+                    {item.status !== "finished" && (
+                      <Pressable
+                        onPress={() => {
+                          setMenuTarget(null);
+                          statusMutation.mutate({ id: item.id, status: "finished" });
+                        }}
+                        className="flex-row items-center gap-3 px-4 py-3 active:bg-surface-variant"
+                      >
+                        <Icon name="check_circle" size={18} color={Colors.primary} />
+                        <Text className="font-body-md text-on-surface text-sm">Mark as Read</Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      onPress={() => {
+                        setMenuTarget(null);
+                        setRemoveTarget({ id: item.id, title: item.books?.title ?? "this book" });
+                      }}
+                      className="flex-row items-center gap-3 px-4 py-3 active:bg-surface-variant"
+                    >
+                      <Icon name="delete" size={18} color={Colors.error} />
+                      <Text className="font-body-md text-error text-sm">Remove</Text>
+                    </Pressable>
+                  </View>
+                )}
               </View>
             );
           }) : (
@@ -212,6 +243,14 @@ export default function Library() {
           )}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Menu backdrop */}
+      {menuTarget && (
+        <Pressable
+          className="absolute inset-0 z-40"
+          onPress={() => setMenuTarget(null)}
+        />
+      )}
 
       <ConfirmModal
         visible={!!removeTarget}
