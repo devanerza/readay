@@ -154,7 +154,7 @@ export default function BookDetail() {
   if (olLoading || localLoading) return <BookDetailSkeleton />;
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           onBack={() => router.back()}

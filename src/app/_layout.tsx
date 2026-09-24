@@ -110,7 +110,12 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthGate>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "#F7EFDE" },
+          }}
+        >
           <Stack.Screen name="index" />
           <Stack.Screen name="auth" />
           <Stack.Screen name="sign-in" />

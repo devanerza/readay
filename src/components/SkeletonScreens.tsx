@@ -210,7 +210,7 @@ export function JourneySkeleton() {
 
 export function BookDetailSkeleton() {
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar
           onBack={() => {}}
@@ -342,7 +342,7 @@ export function ScheduleSkeleton() {
 
 export function DiscoverSkeleton() {
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-surface">
       <SafeAreaView edges={["top"]} className="flex-1">
         <TopAppBar rightActions={[{ icon: "person_2", color: Colors.onSurfaceVariant }]} />
         <ScrollView

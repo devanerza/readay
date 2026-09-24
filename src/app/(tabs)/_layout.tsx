@@ -101,7 +101,7 @@ export default function TabsLayout() {
       <View pointerEvents="box-none" className="absolute bottom-0 left-0 right-0">
         <LinearGradient
           pointerEvents="none"
-          colors={["rgba(247,239,222,0)", Colors.surface]}
+          colors={["rgba(247,239,222,0)", "#F7EFDE"]}
           style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 160 }}
         />
         <View
