@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { getProfile } from "../lib/profiles";
+import { isValidEmail } from "../lib/validation";
+import { t } from "../i18n";
 import Icon from "../components/Icon";
 import { Colors } from "../constants/colors";
 
@@ -15,7 +17,14 @@ export default function SignInScreen() {
   const [error, setError] = useState("");
 
   const handleSignIn = async () => {
-    if (!email.trim() || !password) return;
+    if (!email.trim() || !password) {
+      setError(t("auth.enterEmailAndPassword"));
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError(t("auth.enterValidEmail"));
+      return;
+    }
     setLoading(true);
     setError("");
     const { data, error: authError } = await supabase.auth.signInWithPassword({

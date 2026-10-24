@@ -13,6 +13,9 @@
 
   "auth.signIn": "Sign in",
   "auth.signInDescription": "Enter your email to receive a magic link",
+  "auth.enterEmailAndPassword": "Enter your email and password",
+  "auth.enterValidEmail": "Enter a valid email address",
+  "auth.passwordTooShort": "Password must be at least 6 characters",
 
   "onboarding.title": "Welcome to Readay",
   "onboarding.subtitle": "Let's get to know you as a reader",

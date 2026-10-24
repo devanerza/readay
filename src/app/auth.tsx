@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { getProfile } from "../lib/profiles";
+import { isValidEmail, isValidPassword } from "../lib/validation";
+import { t } from "../i18n";
 import Icon from "../components/Icon";
 import { Colors } from "../constants/colors";
 
@@ -15,8 +17,16 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
 
   const handleSignUp = async () => {
-    if (!email.trim() || password.length < 6) {
-      setError("Enter a valid email and password (at least 6 characters)");
+    if (!email.trim() || !password) {
+      setError(t("auth.enterEmailAndPassword"));
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError(t("auth.enterValidEmail"));
+      return;
+    }
+    if (!isValidPassword(password)) {
+      setError(t("auth.passwordTooShort"));
       return;
     }
     setLoading(true);
