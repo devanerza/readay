@@ -68,7 +68,7 @@ export default function SignInScreen() {
             <TextInput
               className="font-body-md text-on-surface"
               placeholder="you@example.com"
-              placeholderTextColor="Colors.outline"
+              placeholderTextColor={Colors.outline}
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
