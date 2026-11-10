@@ -13,19 +13,20 @@ type Props = {
   title?: string;
   logo?: ImageSourcePropType;
   onBack?: () => void;
+  leftSlot?: React.ReactNode;
   rightActions?: Action[];
   rightSlot?: React.ReactNode;
 };
 
-export default function TopAppBar({ title = "Readay", logo, onBack, rightActions, rightSlot }: Props) {
+export default function TopAppBar({ title = "Readay", logo, onBack, leftSlot, rightActions, rightSlot }: Props) {
   return (
     <View className="w-full flex-row justify-between items-center px-margin-page py-4">
       <View className="flex-row items-center gap-4">
-        {onBack && (
+        {leftSlot ?? (onBack && (
           <Pressable onPress={onBack} className="p-2 -ml-2 active:bg-surface-container rounded-full">
             <Icon name="arrow_back" color={Colors.primary} />
           </Pressable>
-        )}
+        ))}
         {logo ? (
           <Image source={logo} resizeMode="contain" style={{ width: 72, height: 24, marginLeft: 4 }} />
         ) : (
