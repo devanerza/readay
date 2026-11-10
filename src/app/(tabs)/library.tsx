@@ -238,7 +238,7 @@ export default function Library() {
               title={activeTab === "all" ? "Your library is empty" : activeTab === "want_to_read" ? "Your queue is empty" : activeTab === "reading" ? "Not reading anything yet" : "No finished books yet"}
               subtitle={activeTab === "all" ? "Add books to your library to get started." : activeTab === "want_to_read" ? "Discover books to add to your reading list." : activeTab === "reading" ? "Pick a book from your queue and start reading." : "Finished books will appear here. Keep reading!"}
               cta="Discover Books"
-              onCta={() => router.push("/discover" as never)}
+              onCta={() => router.push("/browse-books" as never)}
             />
           )}
         </ScrollView>
