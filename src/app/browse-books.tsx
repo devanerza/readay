@@ -4,13 +4,13 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import { searchBooks, getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
-import { prefetchCovers } from "../../lib/cover-prefetch";
-import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
-import TopAppBar from "../../components/TopAppBar";
-import Icon from "../../components/Icon";
-import { SkeletonBlock } from "../../components/Skeleton";
-import { Colors } from "../../constants/colors";
+import { searchBooks, getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../lib/open-library";
+import { prefetchCovers } from "../lib/cover-prefetch";
+import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../lib/use-pull-refresh";
+import TopAppBar from "../components/TopAppBar";
+import Icon from "../components/Icon";
+import { SkeletonBlock } from "../components/Skeleton";
+import { Colors } from "../constants/colors";
 
 const GENRES = [
   { label: "All" },
