@@ -67,7 +67,7 @@ export default function BookDetail() {
       hasBackfilledPages.current = true;
       backfillPageCount.mutate(olPageCount);
     }
-  }, [olPageCount, localBook?.id, cachedPageCount]);
+  }, [olPageCount, localBook?.id, cachedPageCount, backfillPageCount]);
 
   const pageCount = cachedPageCount || olPageCount || 0;
 
@@ -94,7 +94,7 @@ export default function BookDetail() {
       hasBackfilledAuthor.current = true;
       backfillAuthor.mutate(olAuthor);
     }
-  }, [olAuthor, localBook?.id, localBook?.author]);
+  }, [olAuthor, localBook?.id, localBook?.author, backfillAuthor]);
 
   const displayAuthor = localBook?.author ?? olAuthor ?? null;
 

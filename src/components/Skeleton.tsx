@@ -1,21 +1,22 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Animated, type ViewProps } from "react-native";
 
 function usePulse() {
-  const opacityRef = useRef(new Animated.Value(0.3));
-  
+  // Animated.Value kept in state (not a ref) so it is never read during render.
+  const [opacity] = useState(() => new Animated.Value(0.3));
+
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacityRef.current, { toValue: 1, duration: 800, useNativeDriver: true }),
-        Animated.timing(opacityRef.current, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
       ])
     );
     animation.start();
     return () => animation.stop();
-  }, []);
-  
-  return opacityRef.current;
+  }, [opacity]);
+
+  return opacity;
 }
 
 export function SkeletonBlock({ className, style }: { className?: string; style?: ViewProps["style"] }) {

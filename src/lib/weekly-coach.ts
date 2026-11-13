@@ -10,14 +10,6 @@ export type WeeklyInsight = {
   trend: 'up' | 'down' | 'stable';
 };
 
-type CachedInsight = {
-  id: string;
-  user_id: string;
-  week_start: string;
-  summary_text: string;
-  recommendation_text: string;
-};
-
 function pick<T>(arr: T[], seed: number): T {
   return arr[Math.abs(seed) % arr.length];
 }

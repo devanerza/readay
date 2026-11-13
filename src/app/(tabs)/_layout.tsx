@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
-import { View, Text, Pressable, useWindowDimensions, Animated, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { View, Text, Pressable, useWindowDimensions, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { TabView, Route } from "react-native-tab-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -50,7 +50,8 @@ export default function TabsLayout() {
 
   const [index, setIndex] = useState(0);
   const [addMenuOpen, setAddMenuOpen] = useState(false);
-  const menuAnim = useRef(new Animated.Value(0)).current;
+  // Animated.Value kept in state (not a ref) so it is never read during render.
+  const [menuAnim] = useState(() => new Animated.Value(0));
 
   const routes = TABS.map((t) => ({ key: t.key, title: t.label }));
 
@@ -58,7 +59,7 @@ export default function TabsLayout() {
     if (!isLoading && !session) {
       router.replace("/auth" as never);
     }
-  }, [session, isLoading]);
+  }, [session, isLoading, router]);
 
   const userId = session?.user.id;
   const remindersEnabled = usePreferencesStore((s) => s.remindersEnabled);
