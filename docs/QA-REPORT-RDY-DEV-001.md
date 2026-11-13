@@ -11,7 +11,7 @@
 | Check | Command | Before | After |
 |---|---|---|---|
 | Typecheck | `npx tsc -p tsconfig.json --noEmit` | 1 error | **0 errors** |
-| Lint | `npx expo lint` | **11 errors**, 13 warnings | **0 errors**, 1 info warning |
+| Lint | `npx expo lint` | **11 errors**, 7 warnings | **0 errors**, 1 info warning |
 | Bundle (Android) | `npx expo export --platform android` | — | **exit 0**, `entry-*.hbc` 5.8 MB |
 | Bundle (iOS) | `npx expo export --platform ios` | — | **exit 0**, `entry-*.hbc` 5.6 MB |
 
