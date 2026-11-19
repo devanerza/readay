@@ -110,3 +110,50 @@ export async function updateCurrentPage(bookId: string, userId: string, page: nu
     .eq('user_id', userId);
   if (error) throw error;
 }
+
+export async function addBookToLibrary(userId: string, book: {
+  title: string;
+  author?: string;
+  total_pages?: number;
+  genre?: string;
+  description?: string;
+  cover_url?: string;
+  status?: 'want_to_read' | 'reading' | 'finished';
+}) {
+  // 1. Insert the book into the books table
+  const { data: newBook, error: bookError } = await supabase
+    .from('books')
+    .insert({
+      title: book.title,
+      author: book.author ?? null,
+      page_count: book.total_pages ?? null,
+      genres: book.genre ? [book.genre] : [],
+      description: book.description ?? null,
+      cover_url: book.cover_url ?? null,
+    })
+    .select()
+    .single();
+
+  if (bookError) throw bookError;
+
+  // 2. Add to queue
+  const { data: maxRank } = await supabase
+    .from('queue_items')
+    .select('rank')
+    .eq('user_id', userId)
+    .order('rank', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const nextRank = (maxRank?.rank ?? 0) + 1;
+  const { error: queueError } = await supabase.from('queue_items').insert({
+    user_id: userId,
+    book_id: newBook.id,
+    rank: nextRank,
+    reason_text: '',
+    status: book.status ?? 'want_to_read',
+  });
+
+  if (queueError) throw queueError;
+  return newBook;
+}
