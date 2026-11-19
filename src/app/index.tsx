@@ -19,7 +19,7 @@ export default function Index() {
         router.replace(profile?.display_name ? "/home" : ("/onboarding" as never));
       })
       .catch(() => router.replace("/onboarding" as never));
-  }, [session, isLoading]);
+  }, [session, isLoading, router]);
 
   return (
     <View className="flex-1 bg-surface items-center justify-center">

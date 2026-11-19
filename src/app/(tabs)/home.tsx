@@ -180,10 +180,11 @@ export default function Home() {
         <TopAppBar
           logo={require("../../../assets/images/readay-header.png")}
           rightSlot={
-            <Pressable onPress={() => router.push("/profile" as never)} className="w-9 h-9 rounded-full bg-primary items-center justify-center active:opacity-80">
-              <Text className="font-display text-sm text-on-primary">
-                {(profile?.display_name ?? "R")[0].toUpperCase()}
-              </Text>
+            <Pressable
+              onPress={() => router.push("/library?focus=search" as never)}
+              className="w-9 h-9 rounded-full bg-surface-container-low items-center justify-center active:opacity-80"
+            >
+              <Icon name="search" size={20} color={Colors.onSurface} />
             </Pressable>
           }
         />
@@ -332,7 +333,7 @@ export default function Home() {
             </View>
           ) : (
             <Pressable
-              onPress={() => router.push("/discover" as never)}
+              onPress={() => router.push("/browse-books" as never)}
               className="rounded-[24px] bg-surface-container-low p-8 items-center gap-3 active:bg-surface-container"
             >
               <Icon name="auto_stories" size={40} color={Colors.outline} />
@@ -340,7 +341,7 @@ export default function Home() {
               <Text className="font-body-md text-[12px] text-on-surface-variant text-center">
                 Add a book to your queue to start reading.
               </Text>
-              <Text className="text-primary font-label-md mt-2">Discover books</Text>
+              <Text className="text-primary font-label-md mt-2">Browse books</Text>
             </Pressable>
           )}
 
@@ -404,7 +405,7 @@ export default function Home() {
             <View className="gap-4">
               <View className="flex-row justify-between items-end px-1">
                 <Text className="font-headline-md text-on-surface">Recommended for You</Text>
-                <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/discover" as never)}>
+                <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/browse-books" as never)}>
                   <Text className="text-on-surface-variant font-label-md">See All</Text>
                   <Icon name="chevron_right" size={16} color={Colors.onSurfaceVariant} />
                 </Pressable>
@@ -438,15 +439,15 @@ export default function Home() {
             </View>
           ) : (
             <Pressable
-              onPress={() => router.push("/discover" as never)}
+              onPress={() => router.push("/browse-books" as never)}
               className="rounded-[24px] bg-surface-container-low p-8 items-center gap-3 active:bg-surface-container"
             >
               <Icon name="auto_stories" size={40} color={Colors.outline} />
               <Text className="font-title-lg text-on-surface text-center">Your queue is empty</Text>
               <Text className="font-body-md text-on-surface-variant text-center">
-                Discover books to add to your reading list.
+                Browse books to add to your reading list.
               </Text>
-              <Text className="text-primary font-label-md mt-2">Discover books</Text>
+              <Text className="text-primary font-label-md mt-2">Browse books</Text>
             </Pressable>
           )}
 
