@@ -230,6 +230,21 @@ For each screen below: connect to Supabase via TanStack Query, verify loading/em
 
 ---
 
+### Phase 13 — Splash Screen Dark Mode Fix
+
+**Goal:** Force splash screen to use static surface color (#F7EFDE) regardless of device dark/light mode.
+
+**Why:** Splash was inheriting system theme, showing wrong background in dark mode.
+
+**Fixed:**
+- Added `dark` config to `expo-splash-screen` plugin in `app.json`
+- Both light and dark modes now show `#F7EFDE` (surface color)
+- App itself remains dark-mode compatible — only splash is static
+
+**Status:** ✅ *Done* — splash bg forced to surface color via `dark.backgroundColor` override.
+
+---
+
 ## 2. Definition of Done (per screen)
 
 A screen is done when it passes all of:
