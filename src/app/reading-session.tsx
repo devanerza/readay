@@ -119,6 +119,9 @@ export default function ReadingSession() {
       
       // Invalidate weekly insight cache
       invalidateWeeklyInsight(userId);
+
+      // Refresh Home recommendations against the new session
+      queryClient.invalidateQueries({ queryKey: ["home-recommendations", userId] });
     } catch (e) {
       toast.show(e instanceof Error ? e.message : String(e));
       router.back();
@@ -159,6 +162,7 @@ export default function ReadingSession() {
 
       queryClient.invalidateQueries({ queryKey: ["current-page", book_id, userId] });
       queryClient.invalidateQueries({ queryKey: ["reading-stats", userId] });
+      queryClient.invalidateQueries({ queryKey: ["home-recommendations", userId] });
       router.back();
     } catch {
       toast.show("Could not save page.");
