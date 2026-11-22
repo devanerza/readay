@@ -58,7 +58,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "qa:weekly-insight": "node --experimental-strip-types scripts/qa-weekly-insight.mts"
+    "qa:weekly-insight": "node --experimental-strip-types scripts/qa-weekly-insight.mts",
+    "qa:recommendations": "node --experimental-strip-types scripts/qa-recommendations.mts"
   },
   "private": true
 }
