@@ -9,7 +9,7 @@ import { getReadingStats } from "../../lib/reading-sessions";
 import { getAllCurrentlyReading, getQueueItems } from "../../lib/queue-items";
 import { getScheduleBlocks } from "../../lib/schedule-blocks";
 import { getProfile } from "../../lib/profiles";
-import { getBooksBySubject, buildCoverUrl, extractOpenLibraryId, type OLSearchResult } from "../../lib/open-library";
+import { getRecommendations } from "../../lib/recommendations";
 import { prefetchCovers } from "../../lib/cover-prefetch";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
 import TopAppBar from "../../components/TopAppBar";
@@ -19,6 +19,7 @@ import { BookCardVertical } from "../../components/BookCard";
 import ConfirmModal from "../../components/ConfirmModal";
 import Icon from "../../components/Icon";
 import { Colors } from "../../constants/colors";
+import { t } from "../../i18n";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -49,16 +50,6 @@ function getGreetingSubtitle(streakDays: number) {
   if (streakDays >= 7) return `${streakDays}-day streak — building momentum.`;
   if (streakDays > 0) return `${streakDays}-day streak — keep going!`;
   return "Start a session to begin your streak.";
-}
-
-function olToDisplay(doc: OLSearchResult) {
-  return {
-    key: doc.key,
-    open_library_id: extractOpenLibraryId(doc.key),
-    title: doc.title,
-    author: doc.author_name?.[0] ?? "",
-    cover_url: doc.cover_i ? buildCoverUrl(doc.cover_i) : null,
-  };
 }
 
 export default function Home() {
@@ -104,20 +95,20 @@ export default function Home() {
     enabled: !!userId,
   });
 
-  const topGenre = React.useMemo(() => {
-    const weights = (profile as { genre_weights?: Record<string, number> } | null)?.genre_weights;
-    if (!weights) return "fiction";
-    const sorted = Object.entries(weights).sort(([, a], [, b]) => b - a);
-    return sorted[0]?.[0] ?? "fiction";
-  }, [profile]);
+  const genreWeights = React.useMemo(
+    () => (profile as { genre_weights?: Record<string, number> } | null)?.genre_weights ?? {},
+    [profile],
+  );
+  const genreSignature = React.useMemo(
+    () => Object.entries(genreWeights).sort(([a], [b]) => a.localeCompare(b)).map(([g, w]) => `${g}:${w}`).join("|"),
+    [genreWeights],
+  );
 
-  const { data: recommendedResults, isLoading: recommendedLoading, refetch: refetchRecommended, isRefetching: refetchingRecommended } = useQuery({
-    queryKey: ["home-recommendations", topGenre],
-    queryFn: () => getBooksBySubject(topGenre, 20),
-    enabled: !!userId && wantToReadItems.length === 0,
+  const { data: recommendedItems = [], isLoading: recommendedLoading, refetch: refetchRecommended, isRefetching: refetchingRecommended } = useQuery({
+    queryKey: ["home-recommendations", userId, genreSignature],
+    queryFn: () => getRecommendations(userId!, genreWeights),
+    enabled: !!userId && !!genreSignature,
   });
-
-  const recommendedItems = React.useMemo(() => (recommendedResults ?? []).slice(0, 8).map(olToDisplay), [recommendedResults]);
 
   React.useEffect(() => {
     if (!userId) return;
@@ -345,6 +336,72 @@ export default function Home() {
             </Pressable>
           )}
 
+          {/* Recommended for You */}
+          <View className="gap-4">
+            <View className="flex-row justify-between items-end px-1">
+              <Text className="font-headline-md text-on-surface">{t("home.recommendedForYou")}</Text>
+              <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/browse-books" as never)}>
+                <Text className="text-on-surface-variant font-label-md">See All</Text>
+                <Icon name="chevron_right" size={16} color={Colors.onSurfaceVariant} />
+              </Pressable>
+            </View>
+            {recommendedLoading ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={{ gap: 16 }}
+              >
+                {[1, 2, 3].map((i) => (
+                  <View key={i} className="w-[140px] gap-2">
+                    <SkeletonBlock className="w-full aspect-[2/3] rounded-2xl" />
+                    <SkeletonBlock className="w-full h-4" />
+                    <SkeletonBlock className="w-2/3 h-3" />
+                  </View>
+                ))}
+              </ScrollView>
+            ) : recommendedItems.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={{ gap: 16 }}
+              >
+                {recommendedItems.map((d) => (
+                  <Pressable
+                    key={d.key}
+                    onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
+                    className="w-[140px] active:opacity-80"
+                  >
+                    <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
+                      {d.cover_url ? (
+                        <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
+                      ) : (
+                        <View className="flex-1 items-center justify-center">
+                          <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
+                    <Text className="text-caption text-outline" numberOfLines={1}>{d.author ?? ""}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : (
+              <Pressable
+                onPress={() => router.push("/browse-books" as never)}
+                className="rounded-[24px] bg-surface-container-low p-8 items-center gap-3 active:bg-surface-container"
+              >
+                <Icon name="auto_stories" size={40} color={Colors.outline} />
+                <Text className="font-title-lg text-on-surface text-center">{t("home.recommendationsEmptyTitle")}</Text>
+                <Text className="font-body-md text-on-surface-variant text-center">
+                  {t("home.recommendationsEmptyBody")}
+                </Text>
+                <Text className="text-primary font-label-md mt-2">Browse books</Text>
+              </Pressable>
+            )}
+          </View>
+
           {/* Want to Read Carousel */}
           {wantToReadItems.length > 0 ? (
             <View className="gap-4">
@@ -382,57 +439,6 @@ export default function Home() {
                       <Icon name="play_arrow" size={14} color={Colors.primary} filled />
                       <Text className="font-label-md text-primary text-xs">Start Reading</Text>
                     </View>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          ) : recommendedLoading ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              nestedScrollEnabled
-              contentContainerStyle={{ gap: 16 }}
-            >
-              {[1, 2, 3].map((i) => (
-                <View key={i} className="w-[140px] gap-2">
-                  <SkeletonBlock className="w-full aspect-[2/3] rounded-2xl" />
-                  <SkeletonBlock className="w-full h-4" />
-                  <SkeletonBlock className="w-2/3 h-3" />
-                </View>
-              ))}
-            </ScrollView>
-          ) : recommendedItems.length > 0 ? (
-            <View className="gap-4">
-              <View className="flex-row justify-between items-end px-1">
-                <Text className="font-headline-md text-on-surface">Recommended for You</Text>
-                <Pressable className="flex-row items-center gap-1" onPress={() => router.push("/browse-books" as never)}>
-                  <Text className="text-on-surface-variant font-label-md">See All</Text>
-                  <Icon name="chevron_right" size={16} color={Colors.onSurfaceVariant} />
-                </Pressable>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                nestedScrollEnabled
-                contentContainerStyle={{ gap: 16 }}
-              >
-                {recommendedItems.map((d) => (
-                  <Pressable
-                    key={d.key}
-                    onPress={() => { prefetchCovers([d.cover_url]); router.push(`/book-detail?open_library_id=${d.open_library_id}`); }}
-                    className="w-[140px] active:opacity-80"
-                  >
-                    <View className="w-full aspect-[2/3] rounded-lg overflow-hidden bg-surface-variant">
-                      {d.cover_url ? (
-                        <Image source={{ uri: d.cover_url }} style={{ width: "100%", height: "100%" }} contentFit="cover" recyclingKey={d.cover_url} transition={150} />
-                      ) : (
-                        <View className="flex-1 items-center justify-center">
-                          <Text className="text-outline font-display text-headline-md">{d.title[0] ?? "?"}</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text className="mt-2 font-title-lg text-on-surface" numberOfLines={1}>{d.title}</Text>
-                    <Text className="text-caption text-outline" numberOfLines={1}>{d.author ?? ""}</Text>
                   </Pressable>
                 ))}
               </ScrollView>

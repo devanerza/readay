@@ -24,6 +24,9 @@
   "home.continueReading": "Continue Reading",
   "home.nextSession": "Next Session",
   "home.weeklyProgress": "Weekly Progress",
+  "home.recommendedForYou": "Recommended for You",
+  "home.recommendationsEmptyTitle": "No recommendations yet",
+  "home.recommendationsEmptyBody": "Log a few reading sessions and we'll find books that fit you.",
 
   "profile.title": "Profile",
   "profile.genres": "Genre Preferences",
