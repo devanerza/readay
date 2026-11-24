@@ -45,6 +45,13 @@
   "weeklyCoach.title": "Weekly Coach",
   "weeklyCoach.insufficientData": "Not enough data this week. Keep reading!",
 
+  "journey.activityTitle": "Reading Activity",
+  "journey.activityCount": "{{count}} sessions in the last {{weeks}} weeks",
+  "journey.activityEmpty": "Log a session to start your activity grid",
+  "journey.dayStreak": "day streak",
+  "journey.less": "Less",
+  "journey.more": "More",
+
   "notification.channelReminders": "Reading Reminders",
   "notification.channelTimer": "Reading Timer",
   "notification.prepTitle": "Reading soon",

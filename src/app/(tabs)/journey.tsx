@@ -3,9 +3,10 @@ import { View, Text, ScrollView, Pressable, RefreshControl } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
 import { useAuthStore } from "../../stores/auth-store";
 import { getProfile } from "../../lib/profiles";
-import { getReadingStats, getWeeklySessionDays, getTargetPerformance } from "../../lib/reading-sessions";
+import { getReadingStats, getDailySessionCounts, getTargetPerformance } from "../../lib/reading-sessions";
 import { getQueueItems } from "../../lib/queue-items";
 import { getWeeklyInsight } from "../../lib/weekly-coach";
 import { usePullRefresh, REFRESH_TINT, REFRESH_COLORS } from "../../lib/use-pull-refresh";
@@ -14,7 +15,31 @@ import StatTile from "../../components/StatTile";
 import { JourneySkeleton } from "../../components/SkeletonScreens";
 import { BookCardVertical } from "../../components/BookCard";
 import ReflectionCard from "../../components/ReflectionCard";
+import { t } from "../../i18n";
 import { Colors } from "../../constants/colors";
+
+const ACTIVITY_WEEKS = 13;
+const CELL_SIZE = 14;
+const CELL_GAP = 5;
+const WEEKDAY_WIDTH = 18;
+const LABEL_GUTTER = WEEKDAY_WIDTH + 6;
+const WEEKDAY_LABELS = ["M", "", "W", "", "F", "", ""];
+const EMPTY_ACTIVITY_DAYS: { date: string; count: number }[] = [];
+const ACTIVITY_COLORS = [
+  Colors.surfaceVariant,
+  "rgba(82, 99, 76, 0.28)",
+  "rgba(82, 99, 76, 0.5)",
+  "rgba(82, 99, 76, 0.72)",
+  Colors.primary,
+];
+
+function activityLevel(count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count <= 3) return 2;
+  if (count <= 5) return 3;
+  return 4;
+}
 
 const seasonMantras = [
   "Spring has sprung, and so has your reading",
@@ -48,9 +73,9 @@ export default function Profile() {
     enabled: !!userId,
   });
 
-  const { data: weekData, refetch: refetchWeek, isRefetching: refetchingWeek } = useQuery({
-    queryKey: ["weekly-session-days", userId],
-    queryFn: () => getWeeklySessionDays(userId!, 2),
+  const { data: dailyCounts, refetch: refetchActivity, isRefetching: refetchingActivity } = useQuery({
+    queryKey: ["daily-session-counts", userId],
+    queryFn: () => getDailySessionCounts(userId!, ACTIVITY_WEEKS),
     enabled: !!userId,
   });
 
@@ -72,22 +97,21 @@ export default function Profile() {
     enabled: !!userId,
   });
 
-  const vineDots = useMemo(() => {
-    if (!weekData || weekData.length === 0) return [];
-    const days = weekData.slice(-14);
-    return days.map((d) => {
-      const hasSession = d.minutes > 0;
-      const intensity = Math.min(d.minutes / 30, 1);
-      return {
-        size: hasSession ? Math.round(8 + intensity * 16) : 6,
-        active: hasSession,
-      };
-    });
-  }, [weekData]);
-
-  const completionRate = stats && stats.sessionsCount > 0
-    ? Math.round((stats.streakDays / Math.max(stats.sessionsCount, 14)) * 100)
-    : 0;
+  const activityDays = dailyCounts ?? EMPTY_ACTIVITY_DAYS;
+  const activityWeeks = useMemo(
+    () => Array.from({ length: ACTIVITY_WEEKS }, (_, i) => activityDays.slice(i * 7, i * 7 + 7)),
+    [activityDays]
+  );
+  const monthLabels = useMemo(
+    () => activityWeeks.map((week, i) => {
+      if (week.length === 0) return "";
+      const label = format(new Date(`${week[0].date}T00:00:00`), "MMM");
+      const previous = activityWeeks[i - 1]?.[0];
+      return previous && format(new Date(`${previous.date}T00:00:00`), "MMM") === label ? "" : label;
+    }),
+    [activityWeeks]
+  );
+  const activitySessionCount = activityDays.reduce((total, day) => total + day.count, 0);
 
   const genreLabels = Object.keys(profile?.genre_weights ?? {});
   const currentYear = new Date().getFullYear();
@@ -101,11 +125,11 @@ export default function Profile() {
   const isLoading = profileLoading || statsLoading || insightLoading;
 
   const refreshing =
-    refetchingProfile || refetchingStats || refetchingWeek ||
+    refetchingProfile || refetchingStats || refetchingActivity ||
     refetchingInsight || refetchingFinished || refetchingTarget;
 
   const { refreshing: isRefreshing, onRefresh } = usePullRefresh(
-    [refetchProfile, refetchStats, refetchWeek, refetchInsight, refetchFinished, refetchTarget],
+    [refetchProfile, refetchStats, refetchActivity, refetchInsight, refetchFinished, refetchTarget],
     refreshing
   );
 
@@ -192,35 +216,85 @@ export default function Profile() {
             </View>
           </View>
 
-          {/* Consistency Vine */}
-          <View className="p-6 bg-primary rounded-[32px] gap-6">
-            <View className="flex-row justify-between items-end">
-              <View className="gap-1">
-                <Text className="font-title-lg text-surface">Consistency Vine</Text>
-                <Text className="font-label-md text-surface">
-                  {stats && stats.streakDays > 0
-                    ? `${stats.streakDays} day${stats.streakDays !== 1 ? "s" : ""} of mindfulness`
-                    : "Start reading to grow your vine"}
+          {/* Reading Activity — one block per day, 13 weeks of sessions */}
+          <View className="p-6 bg-surface-container-low rounded-[32px] gap-5">
+            <View className="flex-row justify-between items-end gap-4">
+              <View className="flex-1 gap-1">
+                <Text className="font-display text-title-lg text-on-surface">
+                  {t("journey.activityTitle")}
+                </Text>
+                <Text className="font-body-md text-on-surface-variant">
+                  {activitySessionCount > 0
+                    ? t("journey.activityCount", { count: activitySessionCount, weeks: ACTIVITY_WEEKS })
+                    : t("journey.activityEmpty")}
                 </Text>
               </View>
               <View className="items-end">
-                <Text className="font-display text-headline-lg text-surface">
-                  {completionRate > 0 ? `${completionRate}%` : "—"}
+                <Text className="font-display text-headline-lg text-on-surface">
+                  {stats?.streakDays ?? 0}
                 </Text>
-                <Text className="text-caption text-surface/40">Completion Rate</Text>
+                <Text className="text-caption text-on-surface-variant">
+                  {t("journey.dayStreak")}
+                </Text>
               </View>
             </View>
-            <View className="relative h-16 flex-row items-center justify-between px-1">
-              {vineDots.length > 0
-                ? vineDots.map((dot, i) => (
-                    <View
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                <View className="flex-row mb-2" style={{ marginLeft: LABEL_GUTTER }}>
+                  {monthLabels.map((label, i) => (
+                    <Text
                       key={i}
-                      className={`rounded-full ${dot.active ? "bg-surface/50" : "bg-surface"}`}
-                      style={{ width: dot.size, height: dot.size }}
-                    />
-                  ))
-                : <Text className="font-body-md text-on-surface-variant w-full text-center">No data yet</Text>
-              }
+                      numberOfLines={1}
+                      className="text-caption text-on-surface-variant"
+                      style={{ width: i === monthLabels.length - 1 ? CELL_SIZE : CELL_SIZE + CELL_GAP }}
+                    >
+                      {label}
+                    </Text>
+                  ))}
+                </View>
+                <View className="flex-row">
+                  <View style={{ width: WEEKDAY_WIDTH, marginRight: LABEL_GUTTER - WEEKDAY_WIDTH }}>
+                    {WEEKDAY_LABELS.map((label, i) => (
+                      <View
+                        key={i}
+                        className="justify-center"
+                        style={{ height: CELL_SIZE + (i < WEEKDAY_LABELS.length - 1 ? CELL_GAP : 0) }}
+                      >
+                        <Text className="text-caption text-on-surface-variant">{label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <View className="flex-row" style={{ gap: CELL_GAP }}>
+                    {activityWeeks.map((week, weekIndex) => (
+                      <View key={weekIndex} style={{ gap: CELL_GAP }}>
+                        {week.map((day) => (
+                          <View
+                            key={day.date}
+                            style={{
+                              width: CELL_SIZE,
+                              height: CELL_SIZE,
+                              borderRadius: 3,
+                              backgroundColor: ACTIVITY_COLORS[activityLevel(day.count)],
+                            }}
+                          />
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View className="flex-row items-center justify-end gap-1.5">
+              <Text className="text-caption text-on-surface-variant">{t("journey.less")}</Text>
+              {ACTIVITY_COLORS.map((color, i) => (
+                <View
+                  key={i}
+                  style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: color }}
+                />
+              ))}
+              <Text className="text-caption text-on-surface-variant">{t("journey.more")}</Text>
             </View>
           </View>
 

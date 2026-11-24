@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { startOfWeek, subDays } from 'date-fns';
+import { addDays, format, startOfWeek, subDays } from 'date-fns';
 
 export type ReadingSession = {
   id: string;
@@ -94,6 +94,31 @@ export async function getWeeklySessionDays(userId: string, weeksBack: number = 4
     date,
     minutes: Math.round(seconds / 60),
   }));
+}
+
+export type DailySessionCount = { date: string; count: number };
+
+// Dense, Monday-first day list so the contribution grid can render empty
+// days directly. Dates are local calendar days (yyyy-MM-dd), not UTC slices,
+// so a late-evening session lands on the day the reader actually saw.
+export async function getDailySessionCounts(userId: string, weeksBack: number = 13): Promise<DailySessionCount[]> {
+  const start = startOfWeek(subDays(new Date(), (weeksBack - 1) * 7), { weekStartsOn: 1 });
+  const { data } = await supabase
+    .from('reading_sessions')
+    .select('date')
+    .eq('user_id', userId)
+    .gte('date', start.toISOString());
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const key = format(new Date(row.date), 'yyyy-MM-dd');
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  return Array.from({ length: weeksBack * 7 }, (_, i) => {
+    const key = format(addDays(start, i), 'yyyy-MM-dd');
+    return { date: key, count: counts.get(key) ?? 0 };
+  });
 }
 
 function generateId(): string {
